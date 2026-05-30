@@ -1,26 +1,210 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* -------------------------------------------------------------------------- */
+/*  GRID brand tokens                                                         */
+/* -------------------------------------------------------------------------- */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Off-white / off-dark — never pure #fff or #000.
+     Overriding Tailwind's own --color-white / --color-black means every
+     text-white, bg-white, border-white/X and bg-black/X across the page
+     resolves to these softened values automatically. */
+  --color-white: #f5f5f7;
+  --color-black: #08090c;
+
+  /* Surfaces */
+  --color-grid-black: #08090c;
+  --color-soft-black: #101114;
+  --color-card-charcoal: #1c1c1e;
+
+  /* Accents */
+  --color-grid-blue: #0071e3; /* creator-side primary */
+  --color-client-green: #1a9e4a; /* client-side primary */
+  --color-escrow-green: #4fd07a; /* protected / paid */
+  --color-urgent-red: #ff3b30; /* urgent jobs / risk */
+  --color-review-gold: #f5a14f; /* ratings / highlights */
+  --color-ai-purple: #9a7fe0; /* AI Studio */
+  --color-aerial-cyan: #5aa9f5; /* drone / verified */
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Signature easing — heavy, expensive spring-out */
+  --ease-grid: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-grid-black);
+  color: #f5f5f7;
+  font-family: var(--font-sans), "SF Pro Display", -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Accessibility — visible keyboard focus (WCAG 2.4.7). Mouse clicks stay    */
+/*  clean via :focus-visible; only keyboard navigation shows the ring.        */
+/* -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--color-aerial-cyan);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+a:focus-visible,
+button:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid var(--color-aerial-cyan);
+  outline-offset: 3px;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Liquid-glass nav — a WEB glassmorphism approximation (layered translucency */
+/*  + backdrop blur/saturate + inner edge highlight). This is NOT Apple's      */
+/*  native Liquid Glass material, which is Apple-platform only.                */
+/* -------------------------------------------------------------------------- */
+.glass-nav {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.1),
+      rgb(255 255 255 / 0.02) 55%,
+      rgb(255 255 255 / 0.05)
+    ),
+    rgb(8 9 12 / 0.45);
+  /* displacement (lens) first, then frost + saturate. The url() bends the
+     backdrop so the bar refracts light like real glass rather than only
+     frosting it. Chromium renders the full stack; the layered box-shadow rim
+     below paints on the element itself, so it stays crisp above the frost. */
+  -webkit-backdrop-filter: url(#liquid-glass) blur(11px) saturate(195%) brightness(1.08);
+  backdrop-filter: url(#liquid-glass) blur(11px) saturate(195%) brightness(1.08);
+  box-shadow:
+    /* bright top specular edge — light catching the rim */
+    inset 0 1px 1px rgb(255 255 255 / 0.5),
+    /* faint bottom rim — the thickness of the glass */
+    inset 0 -1px 1px rgb(255 255 255 / 0.14),
+    /* hairline body */
+    inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    /* soft float shadow */
+    0 16px 50px -18px rgb(0 0 0 / 0.75);
+}
+.glass-nav--scrolled {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.12),
+      rgb(255 255 255 / 0.03) 55%,
+      rgb(255 255 255 / 0.06)
+    ),
+    rgb(8 9 12 / 0.62);
+}
+
+/* Top sheen: a soft specular highlight, like light catching a glass edge. */
+.glass-sheen {
+  background: radial-gradient(
+    120% 120% at 50% -10%,
+    rgb(255 255 255 / 0.18),
+    rgb(255 255 255 / 0.04) 45%,
+    transparent 70%
+  );
+}
+/* A second, off-center gloss low on the bar adds dimensional thickness. */
+.glass-gloss {
+  background: radial-gradient(
+    80% 140% at 18% 120%,
+    rgb(255 255 255 / 0.08),
+    transparent 60%
+  );
+}
+
+/* Accessibility / honesty: drop the blur + refraction to a solid surface when
+   the user asks for reduced transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-nav,
+  .glass-nav--scrolled {
+    background: rgb(13 14 18 / 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Scroll-reveal primitive */
+.reveal {
+  opacity: 0;
+  transform: translateY(2.5rem);
+  filter: blur(8px);
+  transition:
+    opacity 0.9s var(--ease-grid),
+    transform 0.9s var(--ease-grid),
+    filter 0.9s var(--ease-grid);
+  will-change: transform, opacity;
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Concentric squircle helper for the focus-frame placeholder brackets */
+@keyframes grid-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes grid-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Lightweight entrance for dashboard sections (server-component friendly —
+   no JS needed). Stagger by setting style={{ animationDelay }}. Reduced-motion
+   is neutralized by the global rule below. */
+@keyframes grid-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: grid-rise 0.62s var(--ease-grid) both;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-grid-blue) 35%, transparent);
+}
+
+/* Custom thin scrollbar for horizontal rails */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
