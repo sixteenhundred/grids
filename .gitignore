@@ -55,3 +55,7 @@ local.db-*
 
 # claude code local settings
 .claude/settings.local.json
+
+# local archive snapshots
+grids-*.zip
+grids-[0-9a-f]*/

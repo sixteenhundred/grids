@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -25,6 +25,8 @@ function navFor(role: Role): NavGroup[] {
     { label: "Contracts", href: "/dashboard/contracts", icon: "file" },
     { label: "Finance", href: "/dashboard/finance", icon: "wallet" },
   ];
+  // Creators get their operational HQ right under Home.
+  if (role !== "client") main.splice(1, 0, { label: "My Operation", href: "/dashboard/operation", icon: "command" });
   // File delivery — creators send, clients receive. Sits directly under Finance.
   main.push({ label: role === "client" ? "Deliveries" : "Transfer", href: "/dashboard/transfer", icon: "folder" });
   const discover: NavItem[] = [
@@ -91,9 +93,52 @@ export function DashboardShell({
   const router = useRouter();
   const { open } = useSheet();
   const [drawer, setDrawer] = useState(false);
-  const groups = navFor(role);
+
+  // Reflect the creator's custom workspace name in the nav.
+  const [opName, setOpName] = useState("My Operation");
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("grid:operation");
+      if (raw) {
+        const n = (JSON.parse(raw) as { name?: string }).name;
+        if (n) setOpName(n);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [pathname]);
+
+  const groups = navFor(role).map((g) => ({
+    ...g,
+    items: g.items.map((i) => (i.href === "/dashboard/operation" ? { ...i, label: opName } : i)),
+  }));
   // Full literal class strings so Tailwind's JIT can see them.
   const accentText = role === "client" ? "text-client-green" : "text-grid-blue";
+
+  // Collapsible sidebar (persisted). Init expanded to match SSR, then hydrate.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem("grid:sidebar") === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("grid:sidebar", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  // Universal back button — shown on pages nested below a top-level nav item.
+  const segs = pathname.split("/").filter(Boolean);
+  const canGoBack = segs.length >= 3;
 
   const primaryAction = () => (role === "client" ? open(<PostJobSheet />) : open(<UploadSheet />));
 
@@ -113,15 +158,27 @@ export function DashboardShell({
       {/* ---------------------------------------------------------------- */}
       {/* Desktop sidebar                                                   */}
       {/* ---------------------------------------------------------------- */}
-      <aside className="sticky top-0 z-30 hidden h-dvh w-64 shrink-0 flex-col border-r border-white/8 bg-[#0a0b0e]/60 px-4 py-6 backdrop-blur-xl lg:flex">
-        <Link href="/dashboard" className="px-3 text-xl font-semibold tracking-tight text-white">
-          Grid<span className="text-grid-blue">.</span>
-        </Link>
+      <aside className={`sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-[#0a0b0e]/60 py-6 backdrop-blur-xl transition-[width,padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:flex ${collapsed ? "w-[4.75rem] px-2.5" : "w-64 px-4"}`}>
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between px-1"}`}>
+          {!collapsed && (
+            <Link href="/dashboard" className="text-xl font-semibold tracking-tight text-white">
+              Grid<span className="text-grid-blue">.</span>
+            </Link>
+          )}
+          <button
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand" : "Collapse"}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            <Icon name="chevron" size={18} className={collapsed ? "" : "rotate-180"} />
+          </button>
+        </div>
 
         <nav className="mt-7 flex-1 overflow-y-auto no-scrollbar">
           {groups.map((g, gi) => (
-            <div key={gi} className={gi > 0 ? "mt-6" : ""}>
-              {g.heading && <div className="px-3 pb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/35">{g.heading}</div>}
+            <div key={gi} className={gi > 0 ? (collapsed ? "mt-3 border-t border-white/8 pt-3" : "mt-6") : ""}>
+              {g.heading && !collapsed && <div className="px-3 pb-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/35">{g.heading}</div>}
               <ul className="flex flex-col gap-0.5">
                 {g.items.map((item) => {
                   const active = isActive(pathname, item.href);
@@ -129,14 +186,15 @@ export function DashboardShell({
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors ${
+                        title={collapsed ? item.label : undefined}
+                        className={`group flex items-center rounded-xl py-2 text-sm transition-colors ${collapsed ? "justify-center px-0" : "gap-3 px-3"} ${
                           active ? "bg-white/[0.06] font-medium text-white" : "text-white/55 hover:bg-white/[0.03] hover:text-white"
                         }`}
                       >
                         <span className={active ? accentText : "text-white/45 group-hover:text-white/70"}>
                           <Icon name={item.icon} size={19} />
                         </span>
-                        {item.label}
+                        {!collapsed && item.label}
                       </Link>
                     </li>
                   );
@@ -147,15 +205,17 @@ export function DashboardShell({
         </nav>
 
         <div className="mt-4 border-t border-white/8 pt-4">
-          <button onClick={() => open(<InviteSheet />)} className="mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-white/55 transition-colors hover:bg-white/[0.03] hover:text-white">
-            <Icon name="gift" size={19} className="text-review-gold" /> Invite &amp; earn
+          <button onClick={() => open(<InviteSheet />)} title={collapsed ? "Invite & earn" : undefined} className={`mb-2 flex w-full items-center rounded-xl py-2 text-sm text-white/55 transition-colors hover:bg-white/[0.03] hover:text-white ${collapsed ? "justify-center px-0" : "gap-3 px-3"}`}>
+            <Icon name="gift" size={19} className="text-review-gold" /> {!collapsed && <span>Invite &amp; earn</span>}
           </button>
-          <Link href="/dashboard/profile" className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${isActive(pathname, "/dashboard/profile") ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
-            <Avatar id="john" name={user.name} size={36} />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium text-white">{user.name}</span>
-              <span className="block truncate text-xs text-white/45">{user.email}</span>
-            </span>
+          <Link href="/dashboard/profile" title={collapsed ? user.name : undefined} className={`flex items-center rounded-xl transition-colors ${collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2"} ${isActive(pathname, "/dashboard/profile") ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}`}>
+            <Avatar id="john" name={user.name} size={collapsed ? 30 : 36} />
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-white">{user.name}</span>
+                <span className="block truncate text-xs text-white/45">{user.email}</span>
+              </span>
+            )}
           </Link>
         </div>
       </aside>
@@ -166,8 +226,19 @@ export function DashboardShell({
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
         <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 bg-[#08090c]/70 px-4 py-3 backdrop-blur-xl sm:px-6">
+          {/* universal back — appears on nested pages */}
+          {canGoBack && (
+            <button
+              onClick={() => router.back()}
+              aria-label="Back"
+              className="flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] pl-2.5 pr-3.5 text-sm font-medium text-white/70 transition-colors hover:border-white/20 hover:text-white"
+            >
+              <Icon name="chevron" size={16} className="rotate-180" /> Back
+            </button>
+          )}
+
           {/* mobile logo */}
-          <Link href="/dashboard" className="text-lg font-semibold tracking-tight text-white lg:hidden">
+          <Link href="/dashboard" className={`text-lg font-semibold tracking-tight text-white lg:hidden ${canGoBack ? "hidden sm:block" : ""}`}>
             Grid<span className="text-grid-blue">.</span>
           </Link>
 

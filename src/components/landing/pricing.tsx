@@ -103,7 +103,7 @@ export function Pricing() {
         <Reveal delay={120}>
           <p className="mt-8 text-center text-xs text-white/60">
             Agencies and companies booking at volume can{" "}
-            <a href="#" className="text-white/70 underline-offset-4 hover:underline">
+            <a href="/signup" className="text-white/70 underline-offset-4 hover:underline">
               talk to us about Grid for Teams
             </a>
             .

@@ -340,6 +340,12 @@ export const Grid = (p: IconProps) => (
     <rect x="14" y="14" width="7" height="7" rx="1.5" />
   </svg>
 );
+export const Command = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
 
 export const ICONS = {
   home: Home,
@@ -393,6 +399,7 @@ export const ICONS = {
   calendar: Calendar,
   chart: Chart,
   grid: Grid,
+  command: Command,
   escrow: Shield,
 } as const;
 

@@ -1,8 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader, Surface, Button, Icon, StatusPill } from "@/components/dashboard/ui";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { BRANDS, money, type Brand } from "@/lib/createearn";
+
+/* Mock contents per quick-access folder. */
+function folderItems(brand: Brand, key: string): { name: string; meta: string }[] {
+  if (key === "contracts")
+    return brand.projects.map((p, i) => ({ name: `GR-20${49 - i} · ${p.title}`, meta: p.status }));
+  if (key === "invoices")
+    return brand.projects.map((p, i) => ({ name: `INV-20${49 - i} · ${money(p.value)}`, meta: p.status === "Delivered" ? "Paid" : "Pending" }));
+  if (key === "moodboards")
+    return brand.palette.slice(0, 3).map((c, i) => ({ name: `${brand.name} moodboard ${i + 1}`, meta: c }));
+  return brand.timeline.map((t) => ({ name: t.title, meta: `${t.kind} · ${t.date}` }));
+}
 
 function Logo({ brand, size }: { brand: Brand; size: number }) {
   return (
@@ -31,6 +43,7 @@ function Palette({ colors, big = false }: { colors: string[]; big?: boolean }) {
 }
 
 function VaultSheet({ brand }: { brand: Brand }) {
+  const [openFolder, setOpenFolder] = useState<string | null>(null);
   return (
     <div>
       <SheetHeader title={brand.name} subtitle={`${brand.industry} · ${brand.location}`} />
@@ -64,18 +77,40 @@ function VaultSheet({ brand }: { brand: Brand }) {
       <div className="mt-6">
         <div className="mb-2 text-[10px] uppercase tracking-[0.16em] text-white/40">Quick access</div>
         <div className="grid grid-cols-2 gap-2.5">
-          {brand.folders.map((f) => (
-            <button key={f.key} className="glass glass-hover flex items-center gap-3 rounded-2xl border border-white/10 p-3 text-left">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-grid-blue/12 text-aerial-cyan ring-1 ring-grid-blue/25">
-                <Icon name={f.icon} size={17} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-medium text-white">{f.label}</span>
-                <span className="block text-xs text-white/45">{f.count} items</span>
-              </span>
-            </button>
-          ))}
+          {brand.folders.map((f) => {
+            const active = openFolder === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setOpenFolder(active ? null : f.key)}
+                className={`glass glass-hover flex items-center gap-3 rounded-2xl border p-3 text-left ${active ? "border-aerial-cyan/50" : "border-white/10"}`}
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-grid-blue/12 text-aerial-cyan ring-1 ring-grid-blue/25">
+                  <Icon name={f.icon} size={17} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium text-white">{f.label}</span>
+                  <span className="block text-xs text-white/45">{f.count} items</span>
+                </span>
+                <Icon name="chevron" size={14} className={`shrink-0 text-white/30 transition-transform ${active ? "rotate-90" : ""}`} />
+              </button>
+            );
+          })}
         </div>
+
+        {openFolder && (
+          <div className="mt-2.5 flex flex-col gap-1.5 rounded-2xl border border-white/10 bg-white/[0.02] p-2.5">
+            {folderItems(brand, openFolder).map((it, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]">
+                <span className="inline-flex min-w-0 items-center gap-2 text-sm text-white/80">
+                  <Icon name="file" size={13} className="shrink-0 text-aerial-cyan" />
+                  <span className="truncate">{it.name}</span>
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-white/40">{it.meta}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Project history */}

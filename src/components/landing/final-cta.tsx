@@ -8,6 +8,26 @@ const FOOTER = {
   Company: ["About", "Trust & safety", "Grid Escrow", "Pricing", "Contact"],
 };
 
+// Every footer link resolves to a real section, signup, or the legal page.
+const LINK_MAP: Record<string, string> = {
+  "Browse talent": "#talent",
+  Categories: "#talent",
+  "Job board": "#jobs",
+  "Urgent calls": "#jobs",
+  Radar: "/signup",
+  "Join as a creator": "/signup",
+  Academy: "/signup",
+  Shop: "/signup",
+  Collab: "/signup",
+  Finance: "/signup",
+  About: "/signup",
+  "Trust & safety": "/terms",
+  "Grid Escrow": "#escrow",
+  Pricing: "#pricing",
+  Contact: "/signup",
+};
+const hrefFor = (label: string) => LINK_MAP[label] ?? "/signup";
+
 export function FinalCta() {
   return (
     <footer className="relative px-4 pb-10 pt-12 sm:px-6">
@@ -57,12 +77,12 @@ export function FinalCta() {
               <ul className="mt-4 flex flex-col gap-2.5">
                 {items.map((item) => (
                   <li key={item}>
-                    <a
-                      href="#"
+                    <Link
+                      href={hrefFor(item)}
                       className="text-sm text-white/60 transition-colors duration-300 hover:text-white"
                     >
                       {item}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -75,9 +95,9 @@ export function FinalCta() {
             © {2026} Grid. All rights reserved.
           </span>
           <div className="flex items-center gap-5 text-xs text-white/60">
-            <a href="#" className="transition-colors hover:text-white">Privacy</a>
-            <a href="#" className="transition-colors hover:text-white">Terms</a>
-            <a href="#" className="transition-colors hover:text-white">Escrow policy</a>
+            <Link href="/terms" className="transition-colors hover:text-white">Privacy</Link>
+            <Link href="/terms" className="transition-colors hover:text-white">Terms</Link>
+            <Link href="#escrow" className="transition-colors hover:text-white">Escrow policy</Link>
           </div>
         </div>
       </div>

@@ -86,7 +86,7 @@ export function Talent() {
             {CATEGORIES.map((cat) => (
               <StaggerItem key={cat.name}>
                 <a
-                  href="#"
+                  href="/signup"
                   className="group relative block overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-1.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:bg-white/[0.06]"
                 >
                   <ImagePlaceholder

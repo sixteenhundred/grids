@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { PageHeader, SectionHeader, Surface, Card, Avatar } from "@/components/dashboard/ui";
+import { PageHeader, SectionHeader, Surface, Card, Avatar, Icon } from "@/components/dashboard/ui";
 import { JobRow } from "@/components/dashboard/cards";
+import { useSheet } from "@/components/dashboard/sheet";
+import { ApplyJobSheet, QuickProfileSheet } from "@/components/dashboard/sheets";
 import { CREATIVES, JOBS } from "@/lib/grid-data";
 
 /* Decorative radar pings — positioned over the rings. */
@@ -14,6 +15,7 @@ const PINGS = [
 ];
 
 export default function RadarPage() {
+  const { open } = useSheet();
   const urgent = JOBS.filter((j) => j.urgent);
   const nearby = CREATIVES.slice(0, 4);
 
@@ -62,7 +64,9 @@ export default function RadarPage() {
         <SectionHeader title="Urgent nearby" />
         <div className="flex flex-col gap-3">
           {urgent.map((j) => (
-            <JobRow key={j.id} job={j} />
+            <button key={j.id} type="button" onClick={() => open(<ApplyJobSheet job={j} />)} className="block text-left">
+              <JobRow job={j} />
+            </button>
           ))}
         </div>
       </div>
@@ -72,20 +76,17 @@ export default function RadarPage() {
         <SectionHeader title="Creatives nearby" />
         <div className="flex flex-col gap-3">
           {nearby.map((c) => (
-            <Card key={c.id} className="flex items-center gap-4 p-4">
-              <Avatar id={c.id} name={c.name} size={44} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-white">{c.name}</div>
-                <div className="truncate text-sm text-white/55">
-                  {c.city} · {c.distanceKm} km
+            <Card key={c.id} hover className="p-0">
+              <button type="button" onClick={() => open(<QuickProfileSheet creative={c} />)} className="flex w-full items-center gap-4 rounded-[inherit] p-4 text-left">
+                <Avatar id={c.id} name={c.name} size={44} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-white">{c.name}</div>
+                  <div className="truncate text-sm text-white/55">{c.city} · {c.distanceKm} km</div>
                 </div>
-              </div>
-              <Link
-                href={`/dashboard/creative/${c.id}`}
-                className="shrink-0 text-sm font-medium text-aerial-cyan transition-colors hover:text-white"
-              >
-                View
-              </Link>
+                <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-aerial-cyan">
+                  View <Icon name="chevron" size={14} />
+                </span>
+              </button>
             </Card>
           ))}
         </div>

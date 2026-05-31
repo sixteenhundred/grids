@@ -85,6 +85,13 @@ export default function SignupPage() {
         <Button type="submit" full arrow tone={green ? "green" : "blue"} disabled={loading}>
           {loading ? "Creating…" : `Create ${green ? "client" : "creator"} account`}
         </Button>
+        <p className="text-center text-xs leading-relaxed text-white/40">
+          By creating an account you agree to Grid&apos;s{" "}
+          <Link href="/terms" className="text-white/60 underline-offset-2 transition-colors hover:text-white hover:underline">
+            Terms of Service
+          </Link>
+          .
+        </p>
       </form>
 
       <p className="mt-8 text-center text-sm text-white/50">
