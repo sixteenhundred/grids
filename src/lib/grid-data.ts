@@ -506,6 +506,19 @@ export const CREW: CrewMember[] = [
   { id: "cr2", role: "Gaffer", name: "Sam Reed", pay: 15 },
 ];
 
+/** Common production roles offered when adding or editing crew. */
+export const CREW_ROLES = [
+  "Co-Director",
+  "Producer",
+  "Camera Op",
+  "Gaffer",
+  "Drone Pilot",
+  "Editor",
+  "Colorist",
+  "Sound",
+  "Assistant",
+] as const;
+
 export const COLLAB_PROJECT = "Bel Air Listing Film";
 
 /* -------------------------------------------------------------------------- */

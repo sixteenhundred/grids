@@ -261,6 +261,7 @@ export function Avatar({ id, name, size = 44 }: { id?: string; name: string; siz
 
 export function MediaTile({
   tile,
+  image,
   className = "",
   label,
   meta,
@@ -269,6 +270,8 @@ export function MediaTile({
   children,
 }: {
   tile: Tile;
+  /** Uploaded cover image (data URL). Falls back to the gradient when absent. */
+  image?: string | null;
   className?: string;
   label?: string;
   meta?: ReactNode;
@@ -277,11 +280,13 @@ export function MediaTile({
   children?: ReactNode;
 }) {
   const style: CSSProperties = {
-    backgroundImage: `linear-gradient(150deg, ${tile.from}, ${tile.to})`,
+    backgroundImage: image ? undefined : `linear-gradient(150deg, ${tile.from}, ${tile.to})`,
     aspectRatio: ratio,
   };
   return (
     <div className={`relative overflow-hidden ${rounded} ${className}`} style={style}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {image && <img src={image} alt={label ?? ""} className="absolute inset-0 h-full w-full object-cover" />}
       {/* viewfinder bracket — matches landing ImagePlaceholder cue */}
       <span className="pointer-events-none absolute left-3 top-3 h-3.5 w-3.5 border-l border-t border-white/25" />
       <span className="pointer-events-none absolute bottom-3 right-3 h-3.5 w-3.5 border-b border-r border-white/25" />

@@ -2,14 +2,16 @@
 
 import { useRef, useState } from "react";
 import { useSheet, SheetHeader, SheetRow } from "./sheet";
-import { Button, StatusPill, ACCENT } from "./ui";
+import { Button, StatusPill, ACCENT, Avatar } from "./ui";
 import { Icon, type IconName } from "./icons";
 import {
   money,
   INVITE_LINK,
   INVITE_TIERS,
   NOTIFS,
+  CREW_ROLES,
   type Creative,
+  type CrewMember,
   type Package,
   type Role,
   type Category,
@@ -282,6 +284,154 @@ export function InviteSheet() {
             <StatusPill tone={t.accent}>{t.perk}</StatusPill>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Collab — add crew & manage an individual crew member                       */
+/* -------------------------------------------------------------------------- */
+
+/** Role picker + free-text override, shared by add and manage flows. */
+function RolePicker({ role, onRole }: { role: string; onRole: (r: string) => void }) {
+  return (
+    <>
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Role</label>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {CREW_ROLES.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onRole(r)}
+            className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${role === r ? "bg-grid-blue text-white" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+      <input
+        value={role}
+        onChange={(e) => onRole(e.target.value)}
+        placeholder="Or type a custom role"
+        className="mb-4 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-grid-blue/50"
+      />
+    </>
+  );
+}
+
+/** Revenue-share slider. `available` is the % pool this member may draw from. */
+function SplitSlider({ pay, available, onPay }: { pay: number; available: number; onPay: (n: number) => void }) {
+  const leadKeeps = Math.max(0, available - pay);
+  return (
+    <>
+      <div className="mb-2 flex items-center justify-between">
+        <label className="text-xs uppercase tracking-[0.14em] text-white/45">Revenue share</label>
+        <span className="font-mono text-sm font-semibold text-aerial-cyan">{pay}%</span>
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={Math.max(1, available)}
+        value={pay}
+        onChange={(e) => onPay(Number(e.target.value))}
+        className="w-full accent-grid-blue"
+      />
+      <p className="mt-2 text-xs text-white/45">
+        Lead keeps <span className="font-medium text-white/70">{leadKeeps}%</span> of this project.
+      </p>
+    </>
+  );
+}
+
+/** Add a new crew member with a role and revenue share. `available` = lead %. */
+export function AddCrewSheet({ available, onAdd }: { available: number; onAdd: (m: CrewMember) => void }) {
+  const { close } = useSheet();
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<string>(CREW_ROLES[0]);
+  const [pay, setPay] = useState(Math.min(15, Math.max(1, available)));
+
+  const canSave = name.trim().length > 0 && role.trim().length > 0 && pay >= 1 && pay <= available;
+
+  if (available < 1) {
+    return (
+      <div>
+        <SheetHeader title="Add crew" subtitle="No revenue share left to allocate." />
+        <p className="text-sm leading-relaxed text-white/60">
+          The full 100% is already split between you and your crew. Lower an existing member’s share first, then add someone new.
+        </p>
+        <div className="mt-6">
+          <Button full onClick={close}>
+            Got it
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SheetHeader title="Add crew" subtitle="Name a role and set their revenue share — no extra account needed." />
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Name</label>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g. Ava Mreng"
+        className="mb-4 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-grid-blue/50"
+      />
+      <RolePicker role={role} onRole={setRole} />
+      <SplitSlider pay={pay} available={available} onPay={setPay} />
+      <div className="mt-6">
+        <Button full disabled={!canSave} onClick={() => { onAdd({ id: `cr${Date.now()}`, name: name.trim(), role: role.trim(), pay }); close(); }}>
+          Add to team
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Manage one crew member: change role, adjust split, or remove them. */
+export function ManageCrewSheet({
+  member,
+  available,
+  onUpdate,
+  onRemove,
+}: {
+  member: CrewMember;
+  available: number;
+  onUpdate: (m: CrewMember) => void;
+  onRemove: (id: string) => void;
+}) {
+  const { close } = useSheet();
+  const [role, setRole] = useState(member.role);
+  const [pay, setPay] = useState(member.pay);
+
+  const canSave = role.trim().length > 0 && pay >= 1 && pay <= available;
+
+  return (
+    <div>
+      <SheetHeader title={member.name} subtitle="Adjust this crew member’s role and revenue share." />
+      <div className="mb-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <Avatar name={member.name} />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-white">{member.name}</div>
+          <div className="text-sm text-white/55">{role || "—"} · {pay}%</div>
+        </div>
+      </div>
+      <RolePicker role={role} onRole={setRole} />
+      <SplitSlider pay={pay} available={available} onPay={setPay} />
+      <div className="mt-6 flex flex-col gap-2.5">
+        <Button full disabled={!canSave} onClick={() => { onUpdate({ ...member, role: role.trim(), pay }); close(); }}>
+          Save changes
+        </Button>
+        <Button
+          full
+          variant="ghost"
+          onClick={() => { onRemove(member.id); close(); }}
+          className="!text-urgent-red hover:!bg-urgent-red/10"
+        >
+          Remove from team
+        </Button>
       </div>
     </div>
   );
