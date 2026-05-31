@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Icon } from "@/components/dashboard/icons";
 
 const TRUST = [
@@ -9,10 +8,6 @@ const TRUST = [
 ];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  // In demo mode there's no login — send anyone hitting /login or /signup
-  // straight into the product.
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === "1") redirect("/dashboard");
-
   return (
     <div className="relative min-h-dvh overflow-hidden">
       {/* ambient mesh — echoes the landing hero */}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { demoLogin } from "@/lib/demo-auth";
 import { Button } from "@/components/dashboard/ui";
 import { Field, AuthError } from "../auth-ui";
 
@@ -18,6 +19,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    // Built-in demo account — works even with no database configured.
+    if (await demoLogin(email, password)) {
+      router.push("/dashboard");
+      return;
+    }
     const { error } = await signIn.email({ email, password });
     setLoading(false);
     if (error) {

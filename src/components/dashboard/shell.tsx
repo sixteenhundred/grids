@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { EASE_GRID } from "@/components/landing/motion";
 import { signOut } from "@/lib/auth-client";
+import { demoLogout } from "@/lib/demo-auth";
 import { useRole, RoleToggle } from "./role-context";
 import { useSheet } from "./sheet";
 import { NotificationsSheet, PostJobSheet, UploadSheet, InviteSheet } from "./sheets";
@@ -143,7 +144,8 @@ export function DashboardShell({
   const primaryAction = () => (role === "client" ? open(<PostJobSheet />) : open(<UploadSheet />));
 
   async function handleSignOut() {
-    await signOut();
+    await signOut().catch(() => {});
+    await demoLogout().catch(() => {});
     router.push("/login");
   }
 

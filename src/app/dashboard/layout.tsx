@@ -1,20 +1,21 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { hasDemoSession } from "@/lib/demo-auth";
+import { DEMO_USER } from "@/lib/demo";
 import { RoleProvider } from "@/components/dashboard/role-context";
 import { SheetProvider } from "@/components/dashboard/sheet";
 import { DashboardShell } from "@/components/dashboard/shell";
 
-// Demo mode (set NEXT_PUBLIC_DEMO_MODE=1) opens the app with no login — ideal
-// for showing the product to investors/users. It also tolerates having no
-// database configured, so the dashboard always loads.
-const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
-const DEMO_USER = { name: "John Hope", email: "demo@grid.com" };
+// Set NEXT_PUBLIC_DEMO_MODE=1 to open the whole app with no login at all.
+const OPEN_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Tolerate a missing database (getSession can throw) so the app still loads.
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  const demo = await hasDemoSession();
 
-  if (!session && !DEMO) {
+  if (!session && !demo && !OPEN_DEMO) {
     redirect("/login");
   }
 

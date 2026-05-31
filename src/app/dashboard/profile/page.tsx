@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
+import { demoLogout } from "@/lib/demo-auth";
 import { useRole } from "@/components/dashboard/role-context";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { UploadSheet } from "@/components/dashboard/sheets";
@@ -94,7 +95,7 @@ export default function ProfilePage() {
   const { role } = useRole();
   const router = useRouter();
   const { open } = useSheet();
-  const handleSignOut = async () => { await signOut(); router.push("/login"); };
+  const handleSignOut = async () => { await signOut().catch(() => {}); await demoLogout().catch(() => {}); router.push("/login"); };
 
   const creativeSeed = CREATIVES[0];
   const creatorDefaults: CreatorProfile = { name: creativeSeed.name, type: creativeSeed.type, city: creativeSeed.city, rate: creativeSeed.rate, bio: creativeSeed.bio };
