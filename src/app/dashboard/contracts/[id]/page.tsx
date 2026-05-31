@@ -85,7 +85,7 @@ export default function ContractDetailPage() {
     setEditing(true);
   }
   function save() {
-    if (!draft) return;
+    if (!draft || !contract) return;
     const note = diffNote(terms, draft);
     if (note === "No changes") {
       setEditing(false);

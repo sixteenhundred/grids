@@ -81,7 +81,7 @@ export default function BrowseShopsPage() {
                     href={`/dashboard/shop/${s.id}`}
                     className="flex w-56 shrink-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition-colors hover:border-white/20 hover:bg-white/[0.05]"
                   >
-                    <ShopLogo config={{ name: s.name, description: s.description, logo: s.logo, banner: s.banner, layout: s.layout }} size={44} />
+                    <ShopLogo config={{ name: s.name, description: s.description, logo: s.logo, banner: s.banner }} size={44} />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-white">{s.name}</div>
                       <div className="text-xs text-white/45">{s.productCount} {s.productCount === 1 ? "product" : "products"}</div>
