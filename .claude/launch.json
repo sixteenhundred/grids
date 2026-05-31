@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "Grid Dev Server",
-      "runtimeExecutable": "/usr/local/bin/npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/johnhope/grids/node_modules/.bin/next",
+      "runtimeArgs": ["dev", "/Users/johnhope/grids"],
       "port": 3000
     },
     {

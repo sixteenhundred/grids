@@ -12,15 +12,18 @@ import {
   MediaTile,
   Button,
   Verified,
+  Icon,
 } from "@/components/dashboard/ui";
 import { ReviewCard, PackageRow } from "@/components/dashboard/cards";
 import { useSheet } from "@/components/dashboard/sheet";
-import { BookingFlow } from "@/components/dashboard/sheets";
+import { useRole } from "@/components/dashboard/role-context";
+import { BookingFlow, MessageSheet } from "@/components/dashboard/sheets";
 import { findCreative, money, CREATIVE_REVIEWS } from "@/lib/grid-data";
 
 export default function CreativeProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { open } = useSheet();
+  const { role } = useRole();
   const c = findCreative(id);
 
   if (!c) {
@@ -45,6 +48,9 @@ export default function CreativeProfilePage() {
   const reviews = CREATIVE_REVIEWS[c.id];
   const book = (pkgIndex = 0) =>
     open(<BookingFlow creative={c} pkg={c.packages[pkgIndex]} />);
+  const message = () =>
+    open(<MessageSheet name={c.name} avatarId={c.id} subtitle={`${c.type} · ${c.city} · ${money(c.rate)}/day`} />);
+  const isClient = role === "client";
 
   return (
     <div className="flex flex-col gap-10">
@@ -95,9 +101,14 @@ export default function CreativeProfilePage() {
               {c.bio}
             </p>
 
-            <div>
-              <Button tone="green" arrow onClick={() => book(0)}>
-                Book {firstName}
+            <div className="flex flex-wrap gap-2.5">
+              {isClient && (
+                <Button tone="green" arrow onClick={() => book(0)}>
+                  Book {firstName}
+                </Button>
+              )}
+              <Button tone={isClient ? "white" : "blue"} variant={isClient ? "ghost" : "solid"} arrow onClick={message}>
+                <Icon name="comment" size={15} /> Message {firstName}
               </Button>
             </div>
           </div>
@@ -119,7 +130,7 @@ export default function CreativeProfilePage() {
         <SectionHeader title="Packages" />
         <div className="flex flex-col gap-3">
           {c.packages.map((p, i) => (
-            <PackageRow key={p.name} pkg={p} onBook={() => book(i)} />
+            <PackageRow key={p.name} pkg={p} onBook={isClient ? () => book(i) : undefined} />
           ))}
         </div>
       </section>
@@ -145,14 +156,20 @@ export default function CreativeProfilePage() {
               <div>
                 <h3 className="font-semibold text-white">Work with {firstName}</h3>
                 <p className="mt-1 max-w-xl text-sm leading-relaxed text-white/55">
-                  Funds are held by Grid Escrow the moment you sign and released only after you
-                  approve the delivery. {money(c.rate)} day rate · {c.city}.
+                  {isClient
+                    ? `Funds are held by Grid Escrow the moment you sign and released only after you approve the delivery. ${money(c.rate)} day rate · ${c.city}.`
+                    : `Reach out to talk through a collaboration or custom brief. ${money(c.rate)} day rate · ${c.city}.`}
                 </p>
               </div>
             </div>
-            <div className="w-full shrink-0 sm:w-auto">
-              <Button tone="green" arrow full onClick={() => book(0)}>
-                Book {firstName}
+            <div className="flex w-full shrink-0 flex-col gap-2.5 sm:w-auto">
+              {isClient && (
+                <Button tone="green" arrow full onClick={() => book(0)}>
+                  Book {firstName}
+                </Button>
+              )}
+              <Button tone={isClient ? "white" : "blue"} variant={isClient ? "ghost" : "solid"} arrow full onClick={message}>
+                Message {firstName}
               </Button>
             </div>
           </div>

@@ -274,6 +274,72 @@ export const Clock = ({ size = 14, ...rest }: IconProps) => (
     <path d="M12 7v5l3 2" />
   </svg>
 );
+export const Target = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="8" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </svg>
+);
+export const Download = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12" />
+    <path d="M7 11l5 5 5-5" />
+    <path d="M5 21h14" />
+  </svg>
+);
+export const Send = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M22 2 11 13" />
+    <path d="M22 2 15 22l-4-9-9-4 20-7z" />
+  </svg>
+);
+export const Globe = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3c2.5 2.5 2.5 15 0 18c-2.5-3-2.5-15.5 0-18z" />
+  </svg>
+);
+export const Instagram = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="18" height="18" rx="5" />
+    <circle cx="12" cy="12" r="4" />
+    <path d="M17.5 6.5h.01" />
+  </svg>
+);
+export const Mail = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3 7 9 6 9-6" />
+  </svg>
+);
+export const Folder = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </svg>
+);
+export const Calendar = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="17" rx="2" />
+    <path d="M3 9h18M8 2v4M16 2v4" />
+  </svg>
+);
+export const Chart = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 19V5" />
+    <path d="M4 19h16" />
+    <path d="M7 16l3-4 3 2 4-6" />
+  </svg>
+);
+export const Grid = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
 
 export const ICONS = {
   home: Home,
@@ -317,6 +383,16 @@ export const ICONS = {
   layout: Layout,
   building: Building,
   clock: Clock,
+  target: Target,
+  download: Download,
+  send: Send,
+  globe: Globe,
+  instagram: Instagram,
+  mail: Mail,
+  folder: Folder,
+  calendar: Calendar,
+  chart: Chart,
+  grid: Grid,
   escrow: Shield,
 } as const;
 

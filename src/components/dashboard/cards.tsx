@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useSheet } from "./sheet";
+import { ApplyJobSheet, QuickProfileSheet } from "./sheets";
 import {
   Card,
   Surface,
@@ -67,10 +71,11 @@ export function CreativeCard({ c }: { c: Creative }) {
   );
 }
 
-/** Compact card for horizontal rails (home featured). */
+/** Compact card for horizontal rails (home featured). Opens a quick profile. */
 export function FeaturedCreativeCard({ c }: { c: Creative }) {
+  const { open } = useSheet();
   return (
-    <Link href={`/dashboard/creative/${c.id}`} className="group block w-56 shrink-0">
+    <button onClick={() => open(<QuickProfileSheet creative={c} />)} className="group block w-56 shrink-0 text-left">
       <Card hover className="h-full overflow-hidden">
         <MediaTile tile={c.portfolio[0]} ratio="4 / 3" rounded="rounded-t-3xl" />
         <div className="p-4">
@@ -85,7 +90,7 @@ export function FeaturedCreativeCard({ c }: { c: Creative }) {
           </div>
         </div>
       </Card>
-    </Link>
+    </button>
   );
 }
 
@@ -94,6 +99,7 @@ export function FeaturedCreativeCard({ c }: { c: Creative }) {
 /* -------------------------------------------------------------------------- */
 
 export function JobCard({ job }: { job: Job }) {
+  const { open } = useSheet();
   return (
     <Card hover className="flex h-full flex-col overflow-hidden">
       <MediaTile tile={job.cover} ratio="16 / 9" rounded="rounded-t-3xl">
@@ -125,7 +131,7 @@ export function JobCard({ job }: { job: Job }) {
         <p className="mt-3 line-clamp-2 flex-1 text-sm leading-relaxed text-white/55">{job.desc}</p>
         <div className="mt-5 flex items-center justify-between">
           <span className="text-xs text-white/40">{job.posted}</span>
-          <Button variant="ghost" arrow className="!py-2 !pl-4">
+          <Button variant="ghost" arrow className="!py-2 !pl-4" onClick={() => open(<ApplyJobSheet job={job} />)}>
             Apply
           </Button>
         </div>

@@ -197,6 +197,49 @@ button:focus-visible,
   animation: grid-rise 0.62s var(--ease-grid) both;
 }
 
+/* Animated circular score/progress sweep (Ring component) */
+@keyframes ring-sweep {
+  from {
+    stroke-dashoffset: var(--ring-circ);
+  }
+}
+
+/* Premium glass panel — layered translucency + inset highlight */
+.glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    rgba(12, 13, 17, 0.5);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.08),
+    0 24px 60px -28px rgba(0, 0, 0, 0.85);
+}
+.glass-hover {
+  transition: transform 0.5s var(--ease-grid), border-color 0.5s var(--ease-grid), box-shadow 0.5s var(--ease-grid);
+}
+.glass-hover:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 32px 70px -26px rgba(0, 0, 0, 0.9);
+}
+
+/* Radar scan sweep for mission/intelligence panels */
+@keyframes radar-scan {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.radar-scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, transparent 0deg, color-mix(in srgb, var(--color-grid-blue) 18%, transparent) 40deg, transparent 80deg);
+  animation: radar-scan 4s linear infinite;
+  pointer-events: none;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-grid-blue) 35%, transparent);
 }

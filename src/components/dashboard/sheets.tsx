@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSheet, SheetHeader, SheetRow } from "./sheet";
-import { Button, StatusPill, ACCENT, Avatar } from "./ui";
+import { Button, StatusPill, ACCENT, Avatar, Stars, Verified, TrustBadge } from "./ui";
 import { Icon, type IconName } from "./icons";
+import { useRole } from "./role-context";
 import {
   money,
   INVITE_LINK,
@@ -12,10 +14,13 @@ import {
   CREW_ROLES,
   type Creative,
   type CrewMember,
+  type Job,
+  type Notif,
   type Package,
   type Role,
   type Category,
 } from "@/lib/grid-data";
+import { loadDeliveries, relativeTime } from "@/lib/transfers";
 
 /* -------------------------------------------------------------------------- */
 /*  Booking flow: escrow notice → digital contract → signed.                   */
@@ -225,7 +230,29 @@ export function UploadSheet() {
 /* -------------------------------------------------------------------------- */
 
 export function NotificationsSheet({ role }: { role: Role }) {
-  const list = NOTIFS[role];
+  // Surface delivery activity at the top of the feed.
+  const all = loadDeliveries().filter((d) => d.markedDelivery);
+  const deliveryNotifs: Notif[] =
+    role === "client"
+      ? all
+          .filter((d) => d.status === "pending")
+          .map((d) => ({
+            icon: "folder",
+            accent: "gold" as const,
+            title: "New delivery to review",
+            detail: `${d.files.length} watermarked preview${d.files.length === 1 ? "" : "s"} for ${d.projectTitle} — accept to unlock full files.`,
+            when: relativeTime(d.createdAt),
+          }))
+      : all
+          .filter((d) => d.status === "accepted")
+          .map((d) => ({
+            icon: "escrow",
+            accent: "escrow" as const,
+            title: "Delivery accepted — payment released",
+            detail: `${d.client} accepted ${d.projectTitle}. ${money(d.value)} released from escrow.`,
+            when: relativeTime(d.acceptedAt ?? d.createdAt),
+          }));
+  const list = [...deliveryNotifs, ...NOTIFS[role]];
   return (
     <div>
       <SheetHeader title="Notifications" subtitle="Bookings, requests and updates." />
@@ -431,6 +458,210 @@ export function ManageCrewSheet({
           className="!text-urgent-red hover:!bg-urgent-red/10"
         >
           Remove from team
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Apply to a job — quick message + apply CTA                                 */
+/* -------------------------------------------------------------------------- */
+
+export function ApplyJobSheet({ job }: { job: Job }) {
+  const { close } = useSheet();
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+
+  if (sent) {
+    return (
+      <div className="py-4 text-center">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-escrow-green/15 text-escrow-green ring-1 ring-escrow-green/30">
+          <Icon name="check" size={30} />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">Application sent</h2>
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/60">
+          {job.company} can now see your profile and message. You’ll be notified if they want to book you.
+        </p>
+        <div className="mt-6">
+          <Button full onClick={close}>
+            Done
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SheetHeader title="Apply for this job" subtitle={`${job.title} · ${job.company}`} />
+
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        <span className="inline-flex items-center gap-1.5 text-sm text-white/60">
+          <Icon name="pin" size={14} /> {job.loc}
+        </span>
+        <span className="font-mono text-sm font-semibold text-white">
+          {money(job.budget)}
+          {job.budgetPer ? <span className="font-normal text-white/60"> {job.budgetPer}</span> : null}
+        </span>
+      </div>
+
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Quick message</label>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={4}
+        autoFocus
+        placeholder={`Hi ${job.company}, I'd love to shoot this. Here's why I'm a great fit…`}
+        className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm leading-relaxed text-white outline-none transition-colors placeholder:text-white/35 focus:border-grid-blue/50"
+      />
+      <p className="mt-2 text-xs text-white/40">Your profile, portfolio and rating are attached automatically.</p>
+
+      <div className="mt-6 flex flex-col gap-2.5">
+        <Button full arrow onClick={() => setSent(true)}>
+          Apply for job
+        </Button>
+        <Button full variant="ghost" disabled={!message.trim()} onClick={() => setSent(true)}>
+          Send message only
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Message a profile — quick prompts + free-text, reusable for any profile.   */
+/* -------------------------------------------------------------------------- */
+
+const MESSAGE_PROMPTS = [
+  "Discuss the location & premises",
+  "Check availability for my dates",
+  "Request a custom package",
+  "Share my project details",
+];
+
+export function MessageSheet({ name, avatarId, subtitle }: { name: string; avatarId?: string; subtitle?: string }) {
+  const { close } = useSheet();
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const first = name.split(" ")[0];
+
+  if (sent) {
+    return (
+      <div className="py-4 text-center">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-grid-blue/15 text-aerial-cyan ring-1 ring-grid-blue/30">
+          <Icon name="comment" size={28} />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">Message sent</h2>
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/60">
+          {first} has been notified and will reply in your inbox. You can keep talking before anything is booked.
+        </p>
+        <div className="mt-6">
+          <Button full onClick={close}>
+            Done
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SheetHeader title={`Message ${first}`} subtitle={subtitle ?? "Talk through the details before you book."} />
+
+      <div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+        <Avatar id={avatarId} name={name} size={40} />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-white">{name}</div>
+          <div className="text-xs text-white/45">Usually replies within a few hours</div>
+        </div>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {MESSAGE_PROMPTS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setMessage(p + ": ")}
+            className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-white/60 transition-colors hover:text-white"
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={4}
+        autoFocus
+        placeholder={`Hi ${first}, I'd love to talk about a shoot…`}
+        className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm leading-relaxed text-white outline-none transition-colors placeholder:text-white/35 focus:border-grid-blue/50"
+      />
+
+      <div className="mt-6">
+        <Button full arrow disabled={!message.trim()} onClick={() => setSent(true)}>
+          Send message
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Quick profile popup — role-aware actions (featured rail, etc.)             */
+/* -------------------------------------------------------------------------- */
+
+export function QuickProfileSheet({ creative }: { creative: Creative }) {
+  const { open, close } = useSheet();
+  const { role } = useRole();
+  const router = useRouter();
+  const first = creative.name.split(" ")[0];
+  const subtitle = `${creative.type} · ${creative.city} · ${money(creative.rate)}/day`;
+
+  const message = () => open(<MessageSheet name={creative.name} avatarId={creative.id} subtitle={subtitle} />);
+  const checkProfile = () => {
+    close();
+    router.push(`/dashboard/creative/${creative.id}`);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-4">
+        <Avatar id={creative.id} name={creative.name} size={56} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <h2 className="truncate text-xl font-semibold tracking-tight text-white">{creative.name}</h2>
+            {creative.verified && <Verified size={17} className="text-grid-blue" />}
+          </div>
+          <p className="mt-0.5 text-sm text-white/55">{creative.type} · {creative.city}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <Stars rating={creative.rating} size={13} />
+            <span className="text-xs text-white/45">({creative.reviews})</span>
+            <span className="text-xs font-medium text-white/70">· {money(creative.rate)}/day</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {creative.verified && <TrustBadge>ID Verified</TrustBadge>}
+        {creative.topRated && <TrustBadge>Top Rated</TrustBadge>}
+        {creative.available && <TrustBadge>Available Today</TrustBadge>}
+      </div>
+
+      <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-white/65">{creative.bio}</p>
+
+      <div className="mt-6 flex flex-col gap-2.5">
+        {role === "client" && (
+          <Button full tone="green" arrow onClick={() => open(<BookingFlow creative={creative} pkg={creative.packages[0]} />)}>
+            Book {first}
+          </Button>
+        )}
+        <Button full tone={role === "client" ? "white" : "blue"} variant={role === "client" ? "ghost" : "solid"} arrow onClick={message}>
+          Message {first}
+        </Button>
+        <Button full variant="ghost" onClick={checkProfile}>
+          Check profile
         </Button>
       </div>
     </div>

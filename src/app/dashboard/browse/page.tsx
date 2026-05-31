@@ -10,23 +10,32 @@ type Filter = "All" | "Photo" | "Video" | "Drone";
 
 const FILTERS: Filter[] = ["All", "Photo", "Video", "Drone"];
 
+const BUDGET_MIN = 2000;
+const BUDGET_MAX = 5000;
+const BUDGET_STEP = 100;
+const budgetLabel = (n: number) => `€${n.toLocaleString()}`;
+
 export default function BrowsePage() {
   const { role } = useRole();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Filter>("All");
+  const [maxBudget, setMaxBudget] = useState(BUDGET_MAX);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return CREATIVES.filter((c) => {
       const matchesCat = category === "All" || c.cat === (category as Category);
+      const matchesBudget = c.rate <= maxBudget;
       const matchesQuery =
         !q ||
         c.name.toLowerCase().includes(q) ||
         c.type.toLowerCase().includes(q) ||
         c.city.toLowerCase().includes(q);
-      return matchesCat && matchesQuery;
+      return matchesCat && matchesBudget && matchesQuery;
     });
-  }, [query, category]);
+  }, [query, category, maxBudget]);
+
+  const sliderAccent = role === "client" ? "accent-client-green" : "accent-grid-blue";
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,6 +79,31 @@ export default function BrowsePage() {
             );
           })}
         </div>
+
+        {/* Budget slider */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-xs uppercase tracking-[0.14em] text-white/45">Max day rate</span>
+            <span className="font-mono text-sm font-semibold text-white">
+              {maxBudget >= BUDGET_MAX ? `${budgetLabel(BUDGET_MAX)}+` : budgetLabel(maxBudget)}
+              <span className="font-normal text-white/45"> / day</span>
+            </span>
+          </div>
+          <input
+            type="range"
+            min={BUDGET_MIN}
+            max={BUDGET_MAX}
+            step={BUDGET_STEP}
+            value={maxBudget}
+            onChange={(e) => setMaxBudget(Number(e.target.value))}
+            aria-label="Maximum day rate"
+            className={`w-full ${sliderAccent}`}
+          />
+          <div className="mt-1 flex justify-between font-mono text-[11px] text-white/35">
+            <span>{budgetLabel(BUDGET_MIN)}</span>
+            <span>{budgetLabel(BUDGET_MAX)}+</span>
+          </div>
+        </div>
       </div>
 
       {/* Results */}
@@ -77,6 +111,7 @@ export default function BrowsePage() {
         <p className="text-sm text-white/45">
           {results.length} {results.length === 1 ? "creative" : "creatives"}
           {category !== "All" ? ` in ${category}` : ""}
+          {maxBudget < BUDGET_MAX ? ` under ${budgetLabel(maxBudget)}/day` : ""}
         </p>
 
         {results.length > 0 ? (

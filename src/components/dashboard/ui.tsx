@@ -489,4 +489,47 @@ export function AmbientGlow({ tone = "blue" }: { tone?: Accent }) {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Ring — animated circular progress / score                                  */
+/* -------------------------------------------------------------------------- */
+
+export function Ring({
+  value,
+  size = 76,
+  stroke = 6,
+  tone = "blue",
+  children,
+}: {
+  value: number;
+  size?: number;
+  stroke?: number;
+  tone?: Accent;
+  children?: ReactNode;
+}) {
+  const v = Math.max(0, Math.min(100, value));
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - v / 100);
+  return (
+    <div className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className={`-rotate-90 ${ACCENT[tone].text}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="opacity-10" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          style={{ ["--ring-circ" as string]: `${circ}`, animation: "ring-sweep 1.1s cubic-bezier(0.32,0.72,0,1) both" } as CSSProperties}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">{children}</div>
+    </div>
+  );
+}
+
 export { Icon, Verified };

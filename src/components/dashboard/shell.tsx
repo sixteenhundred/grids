@@ -25,6 +25,8 @@ function navFor(role: Role): NavGroup[] {
     { label: "Contracts", href: "/dashboard/contracts", icon: "file" },
     { label: "Finance", href: "/dashboard/finance", icon: "wallet" },
   ];
+  // File delivery — creators send, clients receive. Sits directly under Finance.
+  main.push({ label: role === "client" ? "Deliveries" : "Transfer", href: "/dashboard/transfer", icon: "folder" });
   const discover: NavItem[] = [
     { label: "Radar", href: "/dashboard/radar", icon: "map" },
     { label: "Community", href: "/dashboard/community", icon: "users" },
@@ -33,6 +35,13 @@ function navFor(role: Role): NavGroup[] {
     { label: "Trends", href: "/dashboard/trends", icon: "trending" },
   ];
   const grow: NavItem[] = [
+    { label: "First In Line", href: "/dashboard/first-in-line", icon: "target" },
+    { label: "Brand Vault", href: "/dashboard/vault", icon: "grid" },
+    { label: "Content Planner", href: "/dashboard/planner", icon: "calendar" },
+    { label: "AI Sales", href: "/dashboard/sales", icon: "send" },
+    { label: "Creative CRM", href: "/dashboard/crm", icon: "kanban" },
+    { label: "Price Intel", href: "/dashboard/pricing", icon: "chart" },
+    { label: "Match Score", href: "/dashboard/match", icon: "star" },
     { label: "AI Studio", href: "/dashboard/studio", icon: "sparkles" },
     { label: "Shop", href: "/dashboard/shop", icon: "shop" },
     { label: "Academy", href: "/dashboard/academy", icon: "school" },
@@ -40,8 +49,17 @@ function navFor(role: Role): NavGroup[] {
   ];
 
   if (role === "client") {
+    const hq: NavItem[] = [
+      { label: "Concierge", href: "/dashboard/concierge", icon: "sparkles" },
+      { label: "Project Builder", href: "/dashboard/builder", icon: "layout" },
+      { label: "Content Vault", href: "/dashboard/content-vault", icon: "grid" },
+      { label: "Tracker", href: "/dashboard/tracker", icon: "kanban" },
+      { label: "Marketing Advisor", href: "/dashboard/advisor", icon: "chart" },
+      { label: "Performance", href: "/dashboard/performance", icon: "trending" },
+    ];
     return [
       { items: main },
+      { heading: "Client HQ", items: hq },
       { heading: "Discover", items: discover.filter((i) => ["Radar", "Community", "Saved"].includes(i.label)) },
     ];
   }
