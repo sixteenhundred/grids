@@ -2,6 +2,7 @@
 
 import { PageHeader, Surface, Card, MediaTile, Button, Icon, Ring } from "@/components/dashboard/ui";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
+import { MessageSheet } from "@/components/dashboard/sheets";
 import { MATCHES, type Match } from "@/lib/createearn";
 
 function Chips({ items, color = "white" }: { items: string[]; color?: "white" | "cyan" | "purple" }) {
@@ -67,7 +68,7 @@ function MatchSheet({ m }: { m: Match }) {
       </div>
 
       <div className="mt-6">
-        <Button full tone="green" arrow onClick={() => open(<MatchSheet m={m} />)}>
+        <Button full tone="green" arrow onClick={() => open(<MessageSheet name={m.name} avatarId={m.id} subtitle={`${m.industry} · ${m.budget}`} />)}>
           Reach out to {m.name}
         </Button>
       </div>
