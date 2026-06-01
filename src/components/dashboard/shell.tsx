@@ -142,8 +142,9 @@ export function DashboardShell({
   }
   // Full literal class strings so Tailwind's JIT can see them.
   const accentText = role === "client" ? "text-client-green" : "text-grid-blue";
-  // Clients get the company "GRID for Clients" plans page; creators keep theirs.
-  const planHref = role === "client" ? "/dashboard/clients" : "/dashboard/subscription";
+  // Clients get the full "GRID for Clients" subscription + workspace ecosystem;
+  // creators keep their own plans page.
+  const planHref = role === "client" ? "/client/subscriptions" : "/dashboard/subscription";
   const planIsClient = role === "client";
 
   // Collapsible sidebar (persisted). Init expanded to match SSR, then hydrate.
