@@ -8,6 +8,8 @@ import { ThemeProvider } from "@/components/theme";
 import { RoleProvider } from "@/components/dashboard/role-context";
 import { SheetProvider } from "@/components/dashboard/sheet";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { PlanProvider } from "@/components/dashboard/plan-context";
+import { FeatureGate } from "@/components/dashboard/feature-gate";
 
 // Campaign's live web research (Claude + web_search) can run 20-40s — give
 // server actions on dashboard routes room before the platform times them out.
@@ -32,9 +34,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <ThemeProvider>
       <RoleProvider>
         <SheetProvider>
-          <DashboardShell user={{ name: user.name, email: user.email }} isAdmin={isAdmin} flags={flags}>
-            {children}
-          </DashboardShell>
+          <PlanProvider>
+            <DashboardShell user={{ name: user.name, email: user.email }} isAdmin={isAdmin} flags={flags}>
+              <FeatureGate>{children}</FeatureGate>
+            </DashboardShell>
+          </PlanProvider>
         </SheetProvider>
       </RoleProvider>
     </ThemeProvider>

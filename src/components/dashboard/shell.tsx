@@ -16,6 +16,8 @@ import { Notepad } from "./notepad";
 import { Icon, type IconName } from "./icons";
 import type { Role } from "@/lib/grid-data";
 import { featureKeyForHref } from "@/lib/features";
+import { usePlan } from "./plan-context";
+import { planLabel } from "@/lib/plans";
 import type { FlagMap } from "@/lib/admin-types";
 
 type NavItem = { label: string; href: string; icon: IconName };
@@ -99,6 +101,7 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const { role } = useRole();
+  const { plan, hasAccess } = usePlan();
   const pathname = usePathname();
   const router = useRouter();
   const { open } = useSheet();
@@ -118,7 +121,9 @@ export function DashboardShell({
     }
   }, [pathname]);
 
-  // Hide any feature an admin has switched off, then drop emptied groups.
+  // Hide any feature an admin switched off, OR that the current plan doesn't
+  // include (locked features live behind the paywall — discover them on the
+  // Subscription page). Then drop any emptied groups.
   const isEnabled = (href: string) => {
     const key = featureKeyForHref(href);
     return !key || !flags || flags[key] !== false;
@@ -127,7 +132,7 @@ export function DashboardShell({
     .map((g) => ({
       ...g,
       items: g.items
-        .filter((i) => isEnabled(i.href))
+        .filter((i) => isEnabled(i.href) && hasAccess(featureKeyForHref(i.href)))
         .map((i) => (i.href === "/dashboard/operation" ? { ...i, label: opName } : i)),
     }))
     .filter((g) => g.items.length > 0);
@@ -235,6 +240,19 @@ export function DashboardShell({
         </nav>
 
         <div className="mt-4 border-t border-white/8 pt-4">
+          <Link
+            href="/dashboard/subscription"
+            title={collapsed ? "Plans & upgrade" : undefined}
+            className={`mb-1 flex w-full items-center rounded-xl border border-grid-blue/25 bg-grid-blue/[0.08] py-2 text-sm font-medium text-white transition-colors hover:bg-grid-blue/[0.14] ${collapsed ? "justify-center px-0" : "gap-3 px-3"} ${isActive(pathname, "/dashboard/subscription") ? "ring-1 ring-grid-blue/40" : ""}`}
+          >
+            <Icon name="sparkles" size={19} className="text-aerial-cyan" />
+            {!collapsed && (
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span>Plans &amp; upgrade</span>
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+              </span>
+            )}
+          </Link>
           <Link href="/waitlist" title={collapsed ? "Waitlist page" : undefined} className={`mb-1 flex w-full items-center rounded-xl py-2 text-sm text-white/55 transition-colors hover:bg-white/[0.03] hover:text-white ${collapsed ? "justify-center px-0" : "gap-3 px-3"}`}>
             <Icon name="globe" size={19} className="text-aerial-cyan" /> {!collapsed && <span>Waitlist page</span>}
           </Link>
@@ -384,7 +402,15 @@ export function DashboardShell({
                   </div>
                 </div>
               ))}
-              <div className="mt-6 flex gap-2">
+              <Link
+                href="/dashboard/subscription"
+                onClick={() => setDrawer(false)}
+                className="mt-6 flex items-center justify-between gap-2 rounded-2xl border border-grid-blue/25 bg-grid-blue/[0.1] px-4 py-3 text-sm font-medium text-white"
+              >
+                <span className="flex items-center gap-2"><Icon name="sparkles" size={18} className="text-aerial-cyan" /> Plans &amp; upgrade</span>
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+              </Link>
+              <div className="mt-3 flex gap-2">
                 <button onClick={() => { setDrawer(false); open(<InviteSheet />); }} className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/12 py-3 text-sm text-white">
                   <Icon name="gift" size={17} className="text-review-gold" /> Invite
                 </button>

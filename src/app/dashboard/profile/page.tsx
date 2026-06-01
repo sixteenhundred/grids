@@ -20,6 +20,7 @@ import {
   Icon,
 } from "@/components/dashboard/ui";
 import { PackageRow, ReviewCard } from "@/components/dashboard/cards";
+import { MyPlan } from "@/components/dashboard/my-plan";
 import { CREATIVES, MY_COMPANY, CREATIVE_REVIEWS, METRICS, money } from "@/lib/grid-data";
 import {
   loadCreatorProfile,
@@ -164,7 +165,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "240ms" }}>
+        <MyPlan delay={240} />
+
+        <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "300ms" }}>
           <Button variant="ghost" onClick={() => open(<EditCompanySheet initial={client} onSave={saveClient} />)}>Edit company profile</Button>
           <Button variant="ghost" onClick={handleSignOut}>Sign out</Button>
         </div>
@@ -227,7 +230,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "240ms" }}>
+      <MyPlan delay={240} />
+
+      <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "300ms" }}>
         <Button variant="ghost" onClick={() => open(<EditCreatorSheet initial={creator} onSave={saveCreator} />)}>Edit profile</Button>
         <Button variant="ghost" onClick={handleSignOut}>Sign out</Button>
       </div>
