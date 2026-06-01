@@ -163,35 +163,6 @@ export function Hero() {
               h="h-40 sm:h-48"
             />
           </motion.div>
-
-          {/* Floating live-booking card — product texture, escrow pulse */}
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 1.05, duration: 0.8, ease: EASE_GRID }}
-            className="absolute -bottom-5 -left-3 z-10 hidden sm:block"
-          >
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="rounded-2xl border border-white/10 bg-black/60 p-1 backdrop-blur-xl"
-            >
-              <div className="flex items-center gap-3 rounded-[0.85rem] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
-                <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-aerial-cyan/15">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-aerial-cyan/25" />
-                  <Lock />
-                </span>
-                <div className="leading-tight">
-                  <div className="text-[13px] font-semibold text-white">
-                    €3,600 secured
-                  </div>
-                  <div className="text-[11px] text-white/60">
-                    Escrow · funded just now
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         </motion.div>
       </div>
 
@@ -269,16 +240,3 @@ function FloatTile({
   );
 }
 
-function Lock() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
-      <path
-        d="M3.5 6V4.5a3.5 3.5 0 017 0V6M2.8 6h8.4v6H2.8z"
-        stroke="#ffffff"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}

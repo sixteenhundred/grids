@@ -10,7 +10,16 @@
  * Self-contained: keyframes live in a scoped <style> so no global CSS changes.
  */
 
-export function OperationBackground({ on, colors }: { on: boolean; colors: string[] }) {
+export function OperationBackground({
+  on,
+  colors,
+  pulse = false,
+}: {
+  on: boolean;
+  colors: string[];
+  /** Oscillate the hue blue→pink→blue from the center, like the waitlist page. */
+  pulse?: boolean;
+}) {
   if (!on) return null;
 
   const stops = colors && colors.length ? colors : ["#f6c63f", "#ef8a26", "#de3a2f", "#9a31cf", "#4f43c9"];
@@ -28,6 +37,11 @@ export function OperationBackground({ on, colors }: { on: boolean; colors: strin
           filter: saturate(1.15);
           animation: opAuroraBreathe 11s ease-in-out infinite;
         }
+        /* blue→pink→blue hue cycle radiating from the centre (waitlist vibe) */
+        .op-aurora.op-pulse {
+          animation: opAuroraBreathe 11s ease-in-out infinite,
+                     opAuroraHue 9s ease-in-out infinite;
+        }
         .op-aurora-lines {
           background: repeating-radial-gradient(circle at 50% 116%,
             transparent 0 6.4vh,
@@ -37,15 +51,27 @@ export function OperationBackground({ on, colors }: { on: boolean; colors: strin
           animation: opAuroraBreathe 11s ease-in-out infinite;
         }
         @keyframes opAuroraBreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @keyframes opAuroraHue {
+          0%,100% { filter: saturate(1.15) hue-rotate(0deg); }
+          50%     { filter: saturate(1.4) hue-rotate(125deg); }
+        }
         @media (prefers-reduced-motion: reduce) { .op-aurora, .op-aurora-lines { animation: none; } }
       `}</style>
 
-      <div className="op-aurora absolute inset-0" style={{ background: gradient }} />
+      <div
+        className={`op-aurora absolute inset-0${pulse ? " op-pulse" : ""}`}
+        style={{ background: gradient }}
+      />
       <div className="op-aurora-lines absolute inset-0" />
-      {/* dark veil — keeps the dashboard data readable over the colour */}
+      {/* dark veil — keeps content readable over the colour (lighter when the
+          landing wants the colour to read vividly) */}
       <div
         className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(8,9,12,0.62), rgba(8,9,12,0.42) 32%, rgba(8,9,12,0.72))" }}
+        style={{
+          background: pulse
+            ? "linear-gradient(to bottom, rgba(8,9,12,0.5), rgba(8,9,12,0.3) 32%, rgba(8,9,12,0.6))"
+            : "linear-gradient(to bottom, rgba(8,9,12,0.62), rgba(8,9,12,0.42) 32%, rgba(8,9,12,0.72))",
+        }}
       />
     </div>
   );

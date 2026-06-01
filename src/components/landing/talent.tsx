@@ -3,10 +3,10 @@ import { Reveal } from "./reveal";
 import { Stagger, StaggerItem } from "./motion";
 import { Eyebrow } from "./ui";
 
-const CATEGORIES = [
-  { name: "Photo", count: "2,400+", hint: "category-photo.jpg" },
-  { name: "Video", count: "1,800+", hint: "category-video.jpg" },
-  { name: "Drone", count: "640+", hint: "category-drone.jpg" },
+const CATEGORIES: { name: string; count: string; src?: string; hint: string }[] = [
+  { name: "Photo", count: "2,400+", src: "gallery/left.jpg", hint: "category-photo.jpg" },
+  { name: "Video", count: "1,800+", src: "gallery/right.jpg", hint: "category-video.jpg" },
+  { name: "Drone", count: "640+", src: "gallery/top.jpg", hint: "category-drone.jpg" },
   { name: "Production", count: "920+", hint: "category-production.jpg" },
   { name: "Editing", count: "1,100+", hint: "category-editing.jpg" },
   { name: "Crew", count: "780+", hint: "category-crew.jpg" },
@@ -34,13 +34,13 @@ export function Talent() {
             <div className="mt-9 max-w-md rounded-[2rem] border border-white/10 bg-white/[0.03] p-1.5">
               <div className="rounded-[calc(2rem-0.375rem)] bg-card-charcoal/80 p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
                 <div className="flex items-center gap-4">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full">
-                    <ImagePlaceholder label="" hint="" className="h-full w-full" />
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15">
+                    <ImagePlaceholder src="gallery/left.jpg" className="h-full w-full" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate font-semibold text-white">
-                        John Hope
+                        Sara Lindqvist
                       </span>
                       <VerifiedMark />
                     </div>
@@ -90,8 +90,8 @@ export function Talent() {
                   className="group relative block overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-1.5 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-1 hover:bg-white/[0.06]"
                 >
                   <ImagePlaceholder
-                    label={cat.name}
-                    hint={cat.hint}
+                    src={cat.src}
+                    hint={cat.src ? undefined : cat.hint}
                     className="h-32 rounded-[calc(1.5rem-0.375rem)] sm:h-40"
                   />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-4">

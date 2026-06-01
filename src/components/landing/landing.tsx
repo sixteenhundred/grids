@@ -15,25 +15,26 @@ import { Escrow } from "./escrow";
 import { Jobs } from "./jobs";
 import { Trust } from "./trust";
 import { Pricing } from "./pricing";
-import { FinalCta } from "./final-cta";
+import { CtaPanel, SiteFooter } from "./final-cta";
 
 export function Landing() {
   return (
     <MotionConfig reducedMotion="user" transition={{ ease: EASE_GRID }}>
       <AudienceProvider>
         <div className="relative overflow-x-clip">
-          <OperationBackground on colors={OCEAN} />
+          <OperationBackground on colors={OCEAN} pulse />
           <Nav />
           <main>
             <Hero />
             <HowItWorks />
+            <Pricing />
+            <CtaPanel />
             <Talent />
             <Escrow />
             <Jobs />
             <Trust />
-            <Pricing />
-            <FinalCta />
           </main>
+          <SiteFooter />
         </div>
       </AudienceProvider>
     </MotionConfig>

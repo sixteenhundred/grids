@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "./reveal";
 import { Cta } from "./ui";
+import { ProfileRain } from "./profile-rain";
 
 const FOOTER = {
   Marketplace: ["Browse talent", "Categories", "Job board", "Urgent calls", "Radar"],
@@ -28,15 +29,18 @@ const LINK_MAP: Record<string, string> = {
 };
 const hrefFor = (label: string) => LINK_MAP[label] ?? "/signup";
 
-export function FinalCta() {
+/** The "Book visual talent with confidence" CTA box, with a falling profile-picture
+ *  rain behind the headline. Stands on its own so it can sit mid-page. */
+export function CtaPanel() {
   return (
-    <footer className="relative px-4 pb-10 pt-12 sm:px-6">
+    <section className="relative px-4 py-16 sm:px-6 md:py-24">
       <div className="mx-auto max-w-7xl">
-        {/* CTA panel */}
         <Reveal>
           <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.025] p-1.5">
             <div className="relative overflow-hidden rounded-[calc(2.5rem-0.375rem)] bg-[radial-gradient(130%_160%_at_50%_-20%,#0a2a52_0%,#070b14_55%,#050506_100%)] px-6 py-20 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] sm:px-12 md:py-28">
               <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-grid-blue/25 blur-[100px]" />
+              {/* falling profile pictures, behind the copy */}
+              <ProfileRain />
               <p className="relative font-mono text-[11px] uppercase tracking-[0.3em] text-white/60">
                 Get it shot
               </p>
@@ -48,7 +52,7 @@ export function FinalCta() {
                 whether you’re hiring or getting booked.
               </p>
               <div className="relative mt-10 flex flex-wrap items-center justify-center gap-3">
-                <Cta href="/signup" tone="green">
+                <Cta href="/signup" tone="blue">
                   Hire a creative
                 </Cta>
                 <Cta href="/signup" variant="ghost">
@@ -58,9 +62,17 @@ export function FinalCta() {
             </div>
           </div>
         </Reveal>
+      </div>
+    </section>
+  );
+}
 
-        {/* Footer links */}
-        <div className="mt-16 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
+/** Footer links + legal — always sits at the very bottom of the page. */
+export function SiteFooter() {
+  return (
+    <footer className="relative px-4 pb-10 pt-12 sm:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
             <Link href="#top" className="text-2xl font-semibold tracking-tight text-white">
               Grid<span className="text-grid-blue">.</span>
