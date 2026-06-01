@@ -12,6 +12,7 @@ import { useSheet } from "./sheet";
 import { NotificationsSheet, PostJobSheet, UploadSheet, InviteSheet } from "./sheets";
 import { Avatar } from "./ui";
 import { ThemeToggle } from "@/components/theme";
+import { Notepad } from "./notepad";
 import { Icon, type IconName } from "./icons";
 import type { Role } from "@/lib/grid-data";
 import { featureKeyForHref } from "@/lib/features";
@@ -395,6 +396,9 @@ export function DashboardShell({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Global quick notepad — available across the dashboard */}
+      <Notepad />
     </div>
   );
 }
