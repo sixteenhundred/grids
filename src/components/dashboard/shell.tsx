@@ -18,6 +18,7 @@ import type { Role } from "@/lib/grid-data";
 import { featureKeyForHref } from "@/lib/features";
 import { usePlan } from "./plan-context";
 import { planLabel } from "@/lib/plans";
+import { ExperienceSwitcher } from "@/components/experience-switcher";
 import type { FlagMap } from "@/lib/admin-types";
 
 type NavItem = { label: string; href: string; icon: IconName };
@@ -213,6 +214,11 @@ export function DashboardShell({
             <Icon name="chevron" size={18} className={collapsed ? "" : "rotate-180"} />
           </button>
         </div>
+        {!collapsed && (
+          <div className="mt-3 px-1">
+            <ExperienceSwitcher current="creators" />
+          </div>
+        )}
 
         <nav className="mt-7 flex-1 overflow-y-auto no-scrollbar">
           {groups.map((g, gi) => (
@@ -305,6 +311,7 @@ export function DashboardShell({
           <Link href="/dashboard" className={`text-lg font-semibold tracking-tight text-white lg:hidden ${canGoBack ? "hidden sm:block" : ""}`}>
             Grid<span className="text-grid-blue">.</span>
           </Link>
+          <ExperienceSwitcher current="creators" className="lg:hidden" />
 
           <Link
             href="/dashboard/browse"

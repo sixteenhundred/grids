@@ -8,6 +8,7 @@ import { CLIENT_NAV, CLIENT_BOTTOM_NAV, isClientNavActive } from "@/lib/client/n
 import { COMPANY_SLUG } from "@/lib/client/mock";
 import { useClient } from "./client-context";
 import { PlanBadge, FeatureTag, DemoModeNotice } from "./ui";
+import { ExperienceSwitcher } from "@/components/experience-switcher";
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -82,7 +83,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           Grid<span className="text-grid-blue">.</span>
           <span className="ml-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-aerial-cyan">for Clients</span>
         </Link>
-        <nav className="mt-7 flex-1 overflow-y-auto no-scrollbar pr-1">{nav}</nav>
+        <div className="mt-3">
+          <ExperienceSwitcher current="clients" />
+        </div>
+        <nav className="mt-6 flex-1 overflow-y-auto no-scrollbar pr-1">{nav}</nav>
         <Link
           href="/client/company-profile"
           className="mt-3 flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06]"
@@ -111,6 +115,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <Link href="/client/dashboard" className="text-base font-semibold tracking-tight text-white lg:hidden">
             Grid<span className="text-grid-blue">.</span>
           </Link>
+          <ExperienceSwitcher current="clients" className="lg:hidden" />
           <DemoModeNotice className="hidden md:inline-flex" />
           <div className="ml-auto flex items-center gap-2">
             <Link

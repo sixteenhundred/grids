@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "motion/react";
 import { EASE_GRID } from "./motion";
+import { ExperienceSwitcher } from "@/components/experience-switcher";
 
 const LINKS = [
   { label: "How it works", href: "#how" },
@@ -62,7 +63,7 @@ export function Nav() {
           initial={{ y: -80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, ease: EASE_GRID, delay: 0.1 }}
-          className={`glass-nav relative mt-5 mx-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-full border px-3 py-2 pl-5 transition-colors duration-500 ${
+          className={`glass-nav relative mt-5 mx-auto flex w-full max-w-4xl items-center justify-between gap-4 rounded-full border px-3 py-2 pl-5 transition-colors duration-500 ${
             scrolled
               ? "glass-nav--scrolled border-white/16"
               : "border-white/12"
@@ -93,6 +94,7 @@ export function Nav() {
           </div>
 
           <div className="relative flex items-center gap-2">
+            <ExperienceSwitcher current="all" align="right" className="hidden sm:block" />
             <Link
               href="/login"
               className="hidden rounded-full px-4 py-2 text-sm text-white/70 transition-colors hover:text-white sm:block"
@@ -160,7 +162,19 @@ export function Nav() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, ease: EASE_GRID, delay: 0.08 + LINKS.length * 0.06 }}
-              className="mt-8 flex gap-3"
+              className="mt-8 flex flex-col gap-2 border-t border-white/10 pt-6"
+            >
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/35">Explore Grid</span>
+              <Link href="/" onClick={() => setOpen(false)} className="text-lg font-medium text-white">Grid for All</Link>
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="text-lg font-medium text-white">Grid for Creators</Link>
+              <Link href="/client/subscriptions" onClick={() => setOpen(false)} className="text-lg font-medium text-white">Grid for Clients</Link>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: EASE_GRID, delay: 0.12 + LINKS.length * 0.06 }}
+              className="mt-6 flex gap-3"
             >
               <Link
                 href="/login"
