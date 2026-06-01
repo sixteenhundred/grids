@@ -233,6 +233,18 @@ const AV_GRADIENTS: Record<string, string> = {
   nadia: "linear-gradient(135deg,#3a3320,#0f0d08)",
 };
 
+// Real demo portraits, layered over the gradient via background-image so a
+// failed/offline load degrades gracefully back to the gradient (no broken
+// glyph, no event handlers — stays server-component safe).
+const AV_PHOTOS: Record<string, string> = {
+  john: "https://i.pravatar.cc/240?img=12",
+  maya: "https://i.pravatar.cc/240?img=24",
+  theo: "https://i.pravatar.cc/240?img=51",
+  sara: "https://i.pravatar.cc/240?img=16",
+  leo: "https://i.pravatar.cc/240?img=59",
+  nadia: "https://i.pravatar.cc/240?img=44",
+};
+
 export function Avatar({ id, name, size = 44 }: { id?: string; name: string; size?: number }) {
   const initials = name
     .split(" ")
@@ -240,17 +252,19 @@ export function Avatar({ id, name, size = 44 }: { id?: string; name: string; siz
     .map((p) => p[0])
     .join("")
     .toUpperCase();
+  const grad = (id && AV_GRADIENTS[id]) || "linear-gradient(135deg,#2a2a33,#101015)";
+  const photo = id ? AV_PHOTOS[id] : undefined;
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white/90 ring-1 ring-white/10"
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white/90 ring-1 ring-white/10"
       style={{
         width: size,
         height: size,
         fontSize: size * 0.36,
-        background: (id && AV_GRADIENTS[id]) || "linear-gradient(135deg,#2a2a33,#101015)",
+        background: photo ? `url('${photo}') center / cover no-repeat, ${grad}` : grad,
       }}
     >
-      {initials}
+      {!photo && initials}
     </span>
   );
 }
