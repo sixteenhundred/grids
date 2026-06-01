@@ -14,6 +14,7 @@
     "auth:generate": "npx @better-auth/cli@latest generate --y"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@libsql/client": "^0.17.3",
     "better-auth": "^1.6.11",
     "drizzle-orm": "^0.45.2",

@@ -423,6 +423,45 @@ export function Button({
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Toggle — iOS-style settings switch                                         */
+/* -------------------------------------------------------------------------- */
+
+export function Toggle({
+  checked,
+  onChange,
+  tone = "blue",
+  disabled = false,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  tone?: Accent;
+  disabled?: boolean;
+  label?: string;
+}) {
+  const ease = "ease-[cubic-bezier(0.32,0.72,0,1)]";
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-7 w-[3.25rem] shrink-0 items-center rounded-full p-0.5 transition-colors duration-300 ${ease} disabled:cursor-not-allowed disabled:opacity-40 ${
+        checked ? ACCENT[tone].dot : "bg-white/12"
+      }`}
+    >
+      <span
+        className={`inline-block h-6 w-6 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-transform duration-300 ${ease} ${
+          checked ? "translate-x-[1.5rem]" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Icon tile — the prototype's "fbox" launcher, as a link or button.          */
 /* -------------------------------------------------------------------------- */
 

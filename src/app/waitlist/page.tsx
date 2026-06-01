@@ -1,0 +1,239 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Icon, type IconName } from "@/components/dashboard/icons";
+import { joinWaitlist } from "@/lib/waitlist-actions";
+
+/* -------------------------------------------------------------------------- */
+/*  Data — features (creators prioritised)                                     */
+/* -------------------------------------------------------------------------- */
+
+const CREATOR_FEATURES: { icon: IconName; label: string }[] = [
+  { icon: "command", label: "My Operation" },
+  { icon: "wallet", label: "Escrow Payments" },
+  { icon: "folder", label: "File Transfer" },
+  { icon: "file", label: "Contracts" },
+  { icon: "sparkles", label: "AI Studio" },
+  { icon: "shop", label: "Shop" },
+  { icon: "school", label: "Academy" },
+  { icon: "play", label: "Campaign" },
+  { icon: "kanban", label: "Creative CRM" },
+  { icon: "target", label: "First In Line" },
+];
+
+const CLIENT_FEATURES: { icon: IconName; label: string }[] = [
+  { icon: "sparkles", label: "Concierge" },
+  { icon: "layout", label: "Project Builder" },
+  { icon: "kanban", label: "Deliverable Tracker" },
+];
+
+/* -------------------------------------------------------------------------- */
+/*  Liquid-glass headline (2D)                                                 */
+/* -------------------------------------------------------------------------- */
+
+function GlassHeadline() {
+  const mask = useMemo(() => {
+    const svg =
+      `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 200'>` +
+      `<text x='640' y='150' text-anchor='middle' ` +
+      `font-family='Helvetica Neue,Helvetica,Arial,sans-serif' ` +
+      `font-size='150' font-weight='800' letter-spacing='-3'>JOIN THE GRID</text></svg>`;
+    return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  }, []);
+
+  const maskStyle: React.CSSProperties = {
+    WebkitMaskImage: mask,
+    maskImage: mask,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+  };
+
+  return (
+    <div className="relative w-full max-w-4xl" style={{ aspectRatio: "1280 / 200" }}>
+      {/* soft outer glow */}
+      <div className="absolute inset-0" style={{ ...maskStyle, background: "rgba(255,255,255,0.55)", filter: "blur(20px)", opacity: 0.35 }} />
+      {/* frosted glass face — blurs & brightens the rainbow through the letters */}
+      <div
+        className="absolute inset-0"
+        style={{
+          ...maskStyle,
+          background: "rgba(255,255,255,0.18)",
+          backdropFilter: "blur(14px) brightness(1.3) saturate(1.5)",
+          WebkitBackdropFilter: "blur(14px) brightness(1.3) saturate(1.5)",
+        }}
+      />
+      {/* polished sheen — bright top edge fading down */}
+      <div
+        className="absolute inset-0"
+        style={{
+          ...maskStyle,
+          background:
+            "linear-gradient(176deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.3) 100%)",
+          mixBlendMode: "overlay",
+        }}
+      />
+      <span className="sr-only">Join the Grid</span>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Feature pill                                                               */
+/* -------------------------------------------------------------------------- */
+
+function Pill({ icon, label, dim }: { icon: IconName; label: string; dim?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border backdrop-blur-md ${
+        dim
+          ? "border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60"
+          : "border-white/20 bg-white/[0.1] px-3.5 py-2 text-xs text-white/90 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.8)]"
+      }`}
+    >
+      <Icon name={icon} size={dim ? 13 : 15} className={dim ? "text-white/45" : "text-white/75"} />
+      {label}
+    </span>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Page                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export default function WaitlistPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [error, setError] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (status === "loading") return;
+    setStatus("loading");
+    try {
+      const r = await joinWaitlist(email);
+      if (r.ok) setStatus("done");
+      else {
+        setError(r.message);
+        setStatus("error");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <main className="relative min-h-dvh overflow-hidden bg-[#221a4d]">
+      <style>{`
+        .rainbow {
+          background: radial-gradient(108% 118% at 50% 116%,
+            #06020b 0%,
+            #1a0a1e 9%,
+            #f6c63f 17%,
+            #ef8a26 24%,
+            #de3a2f 31%,
+            #cb2c6b 40%,
+            #9a31cf 53%,
+            #4f43c9 66%,
+            #6a45b8 79%,
+            #3b2c79 91%,
+            #241a52 100%);
+          transform-origin: 50% 116%;
+          animation: hueshift 18s linear infinite, breathe 11s ease-in-out infinite;
+        }
+        /* the thin bright accent arcs that sit over the soft bands */
+        .rainbow-lines {
+          background: repeating-radial-gradient(circle at 50% 116%,
+            transparent 0 6.4vh,
+            rgba(255,255,255,0.12) 6.55vh 6.8vh,
+            transparent 6.95vh 12.5vh);
+          mix-blend-mode: screen;
+          animation: breathe 11s ease-in-out infinite;
+        }
+        @keyframes hueshift { from { filter: saturate(1.25) hue-rotate(0deg); } to { filter: saturate(1.25) hue-rotate(360deg); } }
+        @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        @media (prefers-reduced-motion: reduce) {
+          .rainbow, .rainbow-lines { animation: none; }
+        }
+      `}</style>
+
+      {/* soft voluminous rainbow bands + faint crisp accent arcs */}
+      <div aria-hidden className="rainbow absolute inset-0" />
+      <div aria-hidden className="rainbow-lines absolute inset-0" />
+
+      {/* bottom fade — seats the feature pills on darker ground */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5"
+        style={{ background: "linear-gradient(to top, rgba(7,2,12,0.9), rgba(7,2,12,0))" }}
+      />
+
+      {/* content */}
+      <div className="relative z-10 flex min-h-dvh flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 pt-16">
+          <GlassHeadline />
+
+          <div className="w-full max-w-md">
+            {status === "done" ? (
+              <div className="flex items-center justify-center gap-2.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-black">
+                  <Icon name="check" size={15} />
+                </span>
+                <span className="text-base font-semibold text-white">Get ready to earn with Grid</span>
+              </div>
+            ) : (
+              <form onSubmit={submit} className="flex flex-col gap-2.5 sm:flex-row">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (status === "error") setStatus("idle");
+                  }}
+                  placeholder="you@studio.com"
+                  className="flex-1 rounded-full bg-white px-5 py-3.5 text-sm text-black shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)] outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-white/50"
+                />
+                <button
+                  type="submit"
+                  disabled={status === "loading"}
+                  className="rounded-full bg-black px-7 py-3.5 text-sm font-semibold text-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10 transition-transform duration-200 hover:scale-[1.02] disabled:opacity-60"
+                >
+                  {status === "loading" ? "Joining…" : "Join"}
+                </button>
+              </form>
+            )}
+            {status === "error" && <p className="mt-3 text-center text-xs text-red-200">{error}</p>}
+          </div>
+        </div>
+
+        {/* liquid-glass feature pills — creators prioritised */}
+        <div className="w-full px-6 pb-10">
+          <div className="mx-auto max-w-4xl">
+            <div className="mb-2.5 text-center text-[10px] font-medium uppercase tracking-[0.28em] text-white/55">
+              For creators
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {CREATOR_FEATURES.map((f) => (
+                <Pill key={f.label} icon={f.icon} label={f.label} />
+              ))}
+            </div>
+
+            <div className="mb-2.5 mt-6 text-center text-[10px] font-medium uppercase tracking-[0.28em] text-white/35">
+              For clients
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {CLIENT_FEATURES.map((f) => (
+                <Pill key={f.label} icon={f.icon} label={f.label} dim />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}

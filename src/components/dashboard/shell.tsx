@@ -13,6 +13,8 @@ import { NotificationsSheet, PostJobSheet, UploadSheet, InviteSheet } from "./sh
 import { Avatar } from "./ui";
 import { Icon, type IconName } from "./icons";
 import type { Role } from "@/lib/grid-data";
+import { featureKeyForHref } from "@/lib/features";
+import type { FlagMap } from "@/lib/admin-types";
 
 type NavItem = { label: string; href: string; icon: IconName };
 type NavGroup = { heading?: string; items: NavItem[] };
@@ -38,6 +40,7 @@ function navFor(role: Role): NavGroup[] {
     { label: "Trends", href: "/dashboard/trends", icon: "trending" },
   ];
   const grow: NavItem[] = [
+    { label: "Campaign", href: "/dashboard/campaign", icon: "play" },
     { label: "First In Line", href: "/dashboard/first-in-line", icon: "target" },
     { label: "Brand Vault", href: "/dashboard/vault", icon: "grid" },
     { label: "Content Planner", href: "/dashboard/planner", icon: "calendar" },
@@ -84,9 +87,13 @@ function isActive(pathname: string, href: string) {
 
 export function DashboardShell({
   user,
+  isAdmin = false,
+  flags,
   children,
 }: {
   user: { name: string; email: string };
+  isAdmin?: boolean;
+  flags?: FlagMap;
   children: React.ReactNode;
 }) {
   const { role } = useRole();
@@ -109,10 +116,23 @@ export function DashboardShell({
     }
   }, [pathname]);
 
-  const groups = navFor(role).map((g) => ({
-    ...g,
-    items: g.items.map((i) => (i.href === "/dashboard/operation" ? { ...i, label: opName } : i)),
-  }));
+  // Hide any feature an admin has switched off, then drop emptied groups.
+  const isEnabled = (href: string) => {
+    const key = featureKeyForHref(href);
+    return !key || !flags || flags[key] !== false;
+  };
+  const groups = navFor(role)
+    .map((g) => ({
+      ...g,
+      items: g.items
+        .filter((i) => isEnabled(i.href))
+        .map((i) => (i.href === "/dashboard/operation" ? { ...i, label: opName } : i)),
+    }))
+    .filter((g) => g.items.length > 0);
+  // Admins get a dedicated control-panel entry at the bottom of the nav.
+  if (isAdmin) {
+    groups.push({ heading: "Admin", items: [{ label: "Control Panel", href: "/dashboard/admin", icon: "shield" }] });
+  }
   // Full literal class strings so Tailwind's JIT can see them.
   const accentText = role === "client" ? "text-client-green" : "text-grid-blue";
 
@@ -136,6 +156,12 @@ export function DashboardShell({
       return next;
     });
   }
+
+  // Guard: if the current page's feature was switched off, bounce home.
+  useEffect(() => {
+    const key = featureKeyForHref(pathname);
+    if (key && flags && flags[key] === false) router.replace("/dashboard");
+  }, [pathname, flags, router]);
 
   // Universal back button — shown on pages nested below a top-level nav item.
   const segs = pathname.split("/").filter(Boolean);

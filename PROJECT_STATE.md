@@ -16,7 +16,8 @@
 | **Pushed to GitHub?** | ❌ No — committed locally only. Remote (`github.com/sixteenhundred/grids`) does not yet have this work. |
 | **Build status** | ✅ `npm run build` passes |
 | **Deploy target** | Vercel (+ Turso for the database). See `DEPLOY.md`. |
-| **Demo login** | `Alexanderhopebooking@gmail.com` / `Masterkey2403!` (works with no DB). Local test accounts: `test@grid.com` / `testpassword123`, `sara@grid.com` / `sarapassword123`. |
+| **Demo login** | `joingrid@demo.com` / `joingrid2026` (works with no DB; override via `DEMO_EMAIL`/`DEMO_PASSWORD`/`DEMO_NAME` env). This account is also the **admin**. Local test accounts: `test@grid.com` / `testpassword123`, `sara@grid.com` / `sarapassword123`. |
+| **Admin** | The demo account (+ any in `ADMIN_EMAILS`) gets **/dashboard/admin** — a Control Panel with iOS-style feature toggles, server Audit/Clean/Restart, and live status. Flags persist in the `feature_flag` table (in-memory fallback with no DB). |
 
 ---
 
@@ -158,13 +159,19 @@ Migrations: `npm run db:push` (drizzle-kit). For Turso, set `DATABASE_AUTH_TOKEN
 - Creator Transfer → pick client → drag-drop upload → mark delivery.
 - Client receives **watermarked previews**; **Accept** unlocks full files + releases escrow. Notifications both ways; status in Projects.
 
-**Create & Earn (creator)** — `First In Line` (opportunity intel + AI proposal builder), `Brand Vault`, `Content Planner` (drag-drop calendar), `AI Sales Assistant` (radar/missions), `Creative CRM` (drag pipeline), `Price Intelligence` (sliders + earnings graph), `Match Score` (animated rings), plus existing `AI Studio, Shop, Academy, Collab`.
+**Create & Earn (creator)** — `Campaign` (AI marketing campaigns — see below), `First In Line` (opportunity intel + AI proposal builder), `Brand Vault`, `Content Planner` (drag-drop calendar), `AI Sales Assistant` (radar/missions), `Creative CRM` (drag pipeline), `Price Intelligence` (sliders + earnings graph), `Match Score` (animated rings), plus existing `AI Studio, Shop, Academy, Collab`.
+
+**Campaign (`/dashboard/campaign`)** — Apple-clean intake (brand description + optional reference images, age band, interest chips, budget, timeframe) → produces **3 distinct concepts** (viral / premium / community), each with video & photo styles, short/long-form plans, "genius" strategy, budget split, timeline, and **references from proven real campaigns** (Jake Paul, Nike, Aesop, A24, TED, Bloomberg, Glossier, Red Bull…). Detail page `campaign/[id]` (segmented concept tabs) supports inline **Customize/edit**, **Add team members**, **Add to Projects**, and **Open in AI Studio** (generates a real moodboard creation). Saved to localStorage (`grid:campaigns`).
+  - **Generation is a server action** (`src/lib/campaign-actions.ts` → `generateConcepts`). When **`ANTHROPIC_API_KEY`** is set, `src/lib/campaign-ai.ts` calls **Claude (Opus 4.8) with the `web_search` server tool** to research real, current campaigns and returns the 3 concepts as JSON (streamed, adaptive thinking, prompt-cached system prompt, `web_search` capped at 5 uses). With **no key / any error / unparseable output it falls back** to the deterministic generator in `campaign.ts` — same shapes, UI unchanged. Dashboard routes set `maxDuration = 60` for the research call (Vercel).
 
 **Client HQ (client)** — `Creative Concierge`, `AI Project Builder`, `Content Vault`, `Deliverable Tracker`, `Marketing Advisor`, `Content Performance`.
 
 **My Operation HQ (creator)** — personalized command center: status bar, Today's Priorities, Active Operations (advance → auto-archive), Timeline, Pipeline (drag), Deliverables, Financial Command Center, Client Health, AI Assistant, Feed, Archive. **Customizable:** rename (reflected in nav), banner upload, accent/mood, widget collapse/hide/reorder — all persisted.
 
 **Platform polish** — collapsible sidebar, universal back button, full **Terms of Service** page, **dead-link audit** (0 dead buttons/links across the app).
+
+**Waitlist (`/waitlist`)** — standalone **white-theme** pre-launch teaser (deliberately light so the dark app launch is a "wow"). Own layout (`src/app/waitlist/layout.tsx`, `colorScheme: light`) overriding the dark shell — no dashboard/landing chrome. **Design (pure CSS — no WebGL):** a **soft voluminous rainbow** rising from below-centre (`.rainbow` — a broad multi-stop `radial-gradient` of glowing colour bands, dark core → yellow → orange → red → pink → purple → blue → bg; hue animates via `hue-rotate` so it constantly cycles the spectrum, plus a gentle `breathe` scale that pulses the bands outward), with faint crisp accent arcs (`.rainbow-lines`, a `repeating-radial-gradient` in `screen` blend). Over it, a centred **flat (2D) "JOIN THE GRID" liquid-glass headline** (`backdrop-filter` blur/brighten masked to the letter shapes via an inline-SVG text mask + glow + sheen). Beneath: a **pure-white email input + black Join button** only. At the bottom, **liquid-glass feature pills** (frosted `backdrop-blur`) — **"For creators"** (emphasised, prioritised) over **"For clients"** (dimmer). Success → "Get ready to earn with Grid" (white check, no box). Dark layout (`colorScheme: dark`); honours `prefers-reduced-motion`. *(No Three.js — three/@react-three/* deps removed.)* Everything else is static and minimal. Centre card frosts the glass behind it: static subtitle + **email registry** → `joinWaitlist` server action (`src/lib/waitlist-actions.ts`) persists to the `waitlist` table (lazy create, in-memory fallback, de-dupes). Success shows just "Get ready to earn with Grid". Signup count shows in the Admin Control Panel audit. Not linked from the app nav — share the URL directly.
+  - **Deps added:** `three`, `@react-three/fiber` (v9, React 19), `@react-three/drei` (v10). Only the waitlist uses them; WebGL is client-only.
 
 ---
 

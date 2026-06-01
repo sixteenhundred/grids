@@ -13,8 +13,8 @@
 import { cookies } from "next/headers";
 import { DEMO_COOKIE } from "./demo";
 
-const DEMO_EMAIL = "alexanderhopebooking@gmail.com";
-const DEMO_PASSWORD = "Masterkey2403!";
+const DEMO_EMAIL = (process.env.DEMO_EMAIL ?? "joingrid@demo.com").toLowerCase();
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "joingrid2026";
 
 /** Returns true and signs in if the credentials match the demo account. */
 export async function demoLogin(email: string, password: string): Promise<boolean> {

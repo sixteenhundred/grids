@@ -253,11 +253,43 @@ export const lessonProgress = sqliteTable("lesson_progress", {
     .notNull(),
 });
 
+/* -------------------------------------------------------------------------- */
+/*  Admin — site-wide feature flags                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One row per toggled feature. Absence of a row = use the code default.
+ * Written only by the admin panel; read on every dashboard load to decide
+ * which features are live across the whole deployment.
+ */
+export const featureFlag = sqliteTable("feature_flag", {
+  key: text("key").primaryKey(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
+ * Pre-launch waitlist signups. Written by the public /waitlist page; absence of
+ * a DB falls back to an in-memory set so the page still works in a bare demo.
+ */
+export const waitlist = sqliteTable("waitlist", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  city: text("city"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 export const schema = {
   user,
   session,
   account,
   verification,
+  featureFlag,
+  waitlist,
   profile,
   shop,
   product,
