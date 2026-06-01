@@ -67,7 +67,7 @@ export function Pricing() {
                 <div className="relative flex h-full flex-col rounded-[calc(2.25rem-0.375rem)] bg-[radial-gradient(130%_130%_at_0%_0%,#121317_0%,#08090b_70%)] p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
                   <span
                     className={`text-sm font-medium ${
-                      p.tone === "green" ? "text-escrow-green" : "text-aerial-cyan"
+                      p.tone === "green" ? "text-aerial-cyan" : "text-aerial-cyan"
                     }`}
                   >
                     {p.side}
@@ -118,13 +118,13 @@ function Check({ tone }: { tone: "green" | "blue" }) {
   return (
     <span
       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-        tone === "green" ? "bg-escrow-green/15" : "bg-grid-blue/15"
+        tone === "green" ? "bg-aerial-cyan/15" : "bg-grid-blue/15"
       }`}
     >
       <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden>
         <path
           d="M2.5 7.5L5.5 10.5L11.5 3.5"
-          stroke={tone === "green" ? "#4FD07A" : "#5AA9F5"}
+          stroke={tone === "green" ? "#5AA9F5" : "#5AA9F5"}
           strokeWidth="1.6"
           strokeLinecap="round"
           strokeLinejoin="round"

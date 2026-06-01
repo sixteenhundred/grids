@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -18,7 +18,7 @@ const COPY = {
     h1a: "Book visual talent",
     h1b: "with confidence.",
     sub: "Hire verified photographers, cinematographers and drone pilots, without the back-and-forth. Every booking is protected by Grid Escrow.",
-    primary: { label: "Hire a creative", href: "/signup", tone: "green" as const },
+    primary: { label: "Hire a creative", href: "/signup", tone: "blue" as const },
     secondary: { label: "Browse talent", href: "#talent" },
   },
   creator: {
@@ -64,7 +64,7 @@ export function Hero() {
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-[-10%] left-[8%] h-[24rem] w-[24rem] rounded-full bg-client-green/10 blur-[120px]"
+          className="absolute bottom-[-10%] left-[8%] h-[24rem] w-[24rem] rounded-full bg-aerial-cyan/10 blur-[120px]"
           animate={{ x: [0, -26, 0], y: [0, 22, 0] }}
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -80,7 +80,7 @@ export function Hero() {
           animate="show"
         >
           <motion.div variants={staggerItem} className="mb-6 flex flex-wrap items-center gap-3">
-            <Eyebrow tone={audience === "client" ? "green" : "blue"}>
+            <Eyebrow tone="blue">
               {c.eyebrow}
             </Eyebrow>
             <AudienceToggle size="sm" />
@@ -148,21 +148,18 @@ export function Hero() {
             <FloatTile
               span
               float={{ y: [0, -10, 0], duration: 7 }}
-              label="Real-estate · twilight"
-              hint="hero-twilight.jpg"
+              src="/gallery/top.jpg"
               h="h-56 sm:h-72"
               priority
             />
             <FloatTile
               float={{ y: [0, 8, 0], duration: 8.5 }}
-              label="Drone aerial"
-              hint="aerial.jpg"
+              src="/gallery/left.jpg"
               h="h-40 sm:h-48"
             />
             <FloatTile
               float={{ y: [0, -7, 0], duration: 9.5 }}
-              label="Creator on set"
-              hint="on-set.jpg"
+              src="/gallery/right.jpg"
               h="h-40 sm:h-48"
             />
           </motion.div>
@@ -180,8 +177,8 @@ export function Hero() {
               className="rounded-2xl border border-white/10 bg-black/60 p-1 backdrop-blur-xl"
             >
               <div className="flex items-center gap-3 rounded-[0.85rem] bg-white/[0.04] px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
-                <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-escrow-green/15">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-escrow-green/20" />
+                <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-aerial-cyan/15">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-aerial-cyan/25" />
                   <Lock />
                 </span>
                 <div className="leading-tight">
@@ -205,18 +202,26 @@ export function Hero() {
 function FloatTile({
   span = false,
   float,
-  label,
-  hint,
+  src,
   h,
   priority = false,
 }: {
   span?: boolean;
   float: { y: number[]; duration: number };
-  label: string;
-  hint: string;
+  src?: string;
   h: string;
   priority?: boolean;
 }) {
+  // Plain <img> over a clean viewfinder frame: if the photo isn't on disk yet,
+  // onError keeps the frame visible instead of showing a broken image.
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  // A cached image can finish loading before React attaches onLoad — catch that.
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) setLoaded(true);
+  }, []);
+  const radius = "rounded-[calc(1.75rem-0.375rem)]";
   return (
     <motion.div
       variants={{
@@ -237,12 +242,28 @@ function FloatTile({
         whileHover={{ scale: 1.015 }}
         className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-1.5"
       >
-        <ImagePlaceholder
-          priority={priority}
-          label={label}
-          hint={hint}
-          className={`${h} rounded-[calc(1.75rem-0.375rem)]`}
-        />
+        <div className={`relative overflow-hidden ${h} ${radius}`}>
+          {/* clean, text-free frame — also the graceful fallback */}
+          <ImagePlaceholder priority={priority} className="absolute inset-0 h-full w-full" />
+          {src && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={src}
+                alt=""
+                onLoad={() => setLoaded(true)}
+                onError={() => setLoaded(false)}
+                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                  loaded ? "opacity-100" : "opacity-0"
+                }`}
+              />
+              {loaded && (
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+              )}
+            </>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -253,7 +274,7 @@ function Lock() {
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path
         d="M3.5 6V4.5a3.5 3.5 0 017 0V6M2.8 6h8.4v6H2.8z"
-        stroke="#4FD07A"
+        stroke="#ffffff"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"

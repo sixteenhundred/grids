@@ -32,7 +32,7 @@ const JOBS = [
 const toneMap: Record<string, string> = {
   urgent: "bg-urgent-red/12 text-urgent-red ring-urgent-red/25",
   blue: "bg-grid-blue/12 text-aerial-cyan ring-grid-blue/25",
-  green: "bg-client-green/12 text-escrow-green ring-client-green/25",
+  green: "bg-aerial-cyan/12 text-aerial-cyan ring-aerial-cyan/25",
 };
 
 export function Jobs() {

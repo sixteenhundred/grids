@@ -82,7 +82,7 @@ export function Trust() {
                 <figcaption className="mt-6 flex items-center gap-3 border-t border-white/8 pt-5">
                   <span
                     className={`h-9 w-9 shrink-0 rounded-full ${
-                      r.tone === "client" ? "bg-client-green/25" : "bg-grid-blue/25"
+                      r.tone === "client" ? "bg-aerial-cyan/25" : "bg-grid-blue/25"
                     }`}
                   />
                   <div>
@@ -112,13 +112,13 @@ function Shield() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
       <path
         d="M7 1l4.5 1.7v3.6c0 3-2 5-4.5 6-2.5-1-4.5-3-4.5-6V2.7L7 1z"
-        stroke="#4FD07A"
+        stroke="#5AA9F5"
         strokeWidth="1.1"
         strokeLinejoin="round"
       />
       <path
         d="M5 7l1.4 1.4L9 5.8"
-        stroke="#4FD07A"
+        stroke="#5AA9F5"
         strokeWidth="1.1"
         strokeLinecap="round"
         strokeLinejoin="round"

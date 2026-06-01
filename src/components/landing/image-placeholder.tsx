@@ -16,7 +16,7 @@ export function ImagePlaceholder({
   className = "",
   priority = false,
 }: {
-  label: string;
+  label?: string;
   hint?: string;
   src?: string;
   className?: string;
@@ -27,7 +27,7 @@ export function ImagePlaceholder({
       <div className={`relative overflow-hidden ${className}`}>
         <Image
           src={`/${src.replace(/^\//, "")}`}
-          alt={label}
+          alt={label ?? ""}
           fill
           priority={priority}
           sizes="(max-width: 768px) 100vw, 50vw"
@@ -52,14 +52,16 @@ export function ImagePlaceholder({
       <span className="absolute bottom-4 left-4 h-5 w-5 border-b border-l border-white/30" />
       <span className="absolute bottom-4 right-4 h-5 w-5 border-b border-r border-white/30" />
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-6 text-center">
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/60">
-          {label}
-        </span>
-        {hint && (
-          <span className="font-mono text-[10px] text-white/25">{hint}</span>
-        )}
-      </div>
+      {label && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-6 text-center">
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/60">
+            {label}
+          </span>
+          {hint && (
+            <span className="font-mono text-[10px] text-white/25">{hint}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

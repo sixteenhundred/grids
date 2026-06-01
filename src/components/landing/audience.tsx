@@ -41,7 +41,7 @@ export function AudienceToggle({ size = "md" }: { size?: "sm" | "md" }) {
     {
       id: "client",
       label: "Hire talent",
-      thumb: "bg-client-green/90 shadow-[0_0_24px_-4px] shadow-client-green/60",
+      thumb: "bg-aerial-cyan/90 shadow-[0_0_24px_-4px] shadow-aerial-cyan/60",
     },
     {
       id: "creator",

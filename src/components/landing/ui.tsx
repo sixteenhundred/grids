@@ -10,7 +10,7 @@ export function Eyebrow({
 }) {
   const tint = {
     blue: "text-aerial-cyan/90 ring-grid-blue/20",
-    green: "text-escrow-green/90 ring-escrow-green/20",
+    green: "text-aerial-cyan/90 ring-grid-blue/20",
     gold: "text-review-gold/90 ring-review-gold/20",
     red: "text-urgent-red/90 ring-urgent-red/25",
     neutral: "text-white/70 ring-white/12",
@@ -54,7 +54,7 @@ export function Cta({ href, children, variant = "solid", tone = "white" }: CtaPr
     white: "bg-white text-[#101114]",
     blue: "bg-grid-blue text-on-accent shadow-[0_8px_40px_-10px] shadow-grid-blue/50",
     green:
-      "bg-client-green text-on-accent shadow-[0_8px_40px_-10px] shadow-client-green/50",
+      "bg-grid-blue text-on-accent shadow-[0_8px_40px_-10px] shadow-grid-blue/50",
   }[tone];
   const innerBg = tone === "white" ? "bg-[#101114]/8" : "bg-white/20";
 

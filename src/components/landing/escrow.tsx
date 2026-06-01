@@ -37,7 +37,7 @@ export function Escrow() {
     <section id="escrow" className="relative px-4 py-24 sm:px-6 md:py-36">
       {/* protected-green ambient */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-escrow-green/[0.07] blur-[140px]" />
+        <div className="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-aerial-cyan/[0.07] blur-[140px]" />
       </div>
 
       <div className="relative mx-auto max-w-7xl">
@@ -59,8 +59,8 @@ export function Escrow() {
                 <ul className="mt-8 flex flex-col gap-3">
                   {GUARANTEES.map((g) => (
                     <li key={g} className="flex items-center gap-3 text-sm text-white/80">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-escrow-green/18 ring-1 ring-escrow-green/30">
-                        <Check className="text-escrow-green" />
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-aerial-cyan/18 ring-1 ring-aerial-cyan/30">
+                        <Check className="text-aerial-cyan" />
                       </span>
                       {g}
                     </li>
@@ -81,8 +81,8 @@ export function Escrow() {
                     {/* panel header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-escrow-green/15 ring-1 ring-escrow-green/30">
-                          <Shield className="text-escrow-green" />
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-aerial-cyan/15 ring-1 ring-aerial-cyan/30">
+                          <Shield className="text-aerial-cyan" />
                         </span>
                         <div className="leading-tight">
                           <div className="text-sm font-semibold text-white">
@@ -93,10 +93,10 @@ export function Escrow() {
                           </div>
                         </div>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-escrow-green/12 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-escrow-green ring-1 ring-escrow-green/25">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-aerial-cyan/12 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-aerial-cyan ring-1 ring-aerial-cyan/25">
                         <span className="relative flex h-1.5 w-1.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-escrow-green/70" />
-                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-escrow-green" />
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-aerial-cyan/70" />
+                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-aerial-cyan" />
                         </span>
                         Live
                       </span>
@@ -107,7 +107,7 @@ export function Escrow() {
                       {/* spine: static track + animated fill */}
                       <span className="absolute left-[19px] top-3 bottom-9 w-px bg-white/12" />
                       <motion.span
-                        className="absolute left-[19px] top-3 w-px origin-top bg-gradient-to-b from-escrow-green via-escrow-green/70 to-escrow-green/0"
+                        className="absolute left-[19px] top-3 w-px origin-top bg-gradient-to-b from-aerial-cyan via-aerial-cyan/70 to-aerial-cyan/0"
                         style={{ height: "calc(100% - 3rem)" }}
                         initial={{ scaleY: 0 }}
                         whileInView={{ scaleY: 1 }}
@@ -125,9 +125,9 @@ export function Escrow() {
                               <span
                                 className={`flex h-10 w-10 items-center justify-center rounded-full ${
                                   step.state === "done"
-                                    ? "bg-escrow-green text-[#06140c]"
+                                    ? "bg-aerial-cyan text-[#06140c]"
                                     : step.state === "active"
-                                      ? "bg-[#0a0c0e] text-escrow-green ring-1 ring-escrow-green/50"
+                                      ? "bg-[#0a0c0e] text-aerial-cyan ring-1 ring-aerial-cyan/50"
                                       : "bg-[#0a0c0e] text-white/65 ring-1 ring-white/15"
                                 }`}
                               >
@@ -135,7 +135,7 @@ export function Escrow() {
                               </span>
                               {step.state === "active" && (
                                 <span
-                                  className="absolute inset-0 rounded-full ring-1 ring-escrow-green/60"
+                                  className="absolute inset-0 rounded-full ring-1 ring-aerial-cyan/60"
                                   style={{ animation: "grid-pulse 2.4s ease-in-out infinite" }}
                                 />
                               )}
@@ -146,7 +146,7 @@ export function Escrow() {
                                   {step.label}
                                 </span>
                                 {step.state === "active" ? (
-                                  <span className="rounded-full bg-escrow-green/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-escrow-green ring-1 ring-escrow-green/25">
+                                  <span className="rounded-full bg-aerial-cyan/12 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-aerial-cyan ring-1 ring-aerial-cyan/25">
                                     Held safely
                                   </span>
                                 ) : (
@@ -163,12 +163,12 @@ export function Escrow() {
                     </div>
 
                     {/* footer total */}
-                    <div className="mt-2 flex items-center justify-between rounded-[1.25rem] border border-escrow-green/25 bg-escrow-green/[0.08] px-5 py-4">
+                    <div className="mt-2 flex items-center justify-between rounded-[1.25rem] border border-aerial-cyan/25 bg-aerial-cyan/[0.08] px-5 py-4">
                       <div className="flex items-center gap-2.5">
-                        <Lock className="text-escrow-green" />
+                        <Lock className="text-aerial-cyan" />
                         <span className="text-sm text-white/80">Held in escrow</span>
                       </div>
-                      <span className="font-mono text-base font-semibold text-escrow-green">
+                      <span className="font-mono text-base font-semibold text-aerial-cyan">
                         <AnimatedNumber value={3600} prefix="€" />
                       </span>
                     </div>

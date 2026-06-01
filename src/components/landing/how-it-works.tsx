@@ -71,7 +71,7 @@ export function HowItWorks() {
                   <div
                     className={`mt-8 h-px w-full origin-left scale-x-0 transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-x-100 ${
                       audience === "client"
-                        ? "bg-gradient-to-r from-client-green to-transparent"
+                        ? "bg-gradient-to-r from-aerial-cyan to-transparent"
                         : "bg-gradient-to-r from-grid-blue to-transparent"
                     }`}
                   />
