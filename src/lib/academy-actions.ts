@@ -13,6 +13,7 @@ import { headers } from "next/headers";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { hasDemoSession } from "./demo-auth";
 import { DEMO_USER } from "./demo";
+import { ensureDemoUserRow } from "./demo-user";
 import { db } from "./db";
 import { academy, academyEnrollment, learningPath, lesson, lessonProgress } from "./db/schema";
 import { auth } from "./auth";
@@ -44,7 +45,10 @@ function genId(prefix: string): string {
 async function requireUser() {
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
   if (session) return session.user;
-  if (await hasDemoSession()) return DEMO_USER;
+  if (await hasDemoSession()) {
+    await ensureDemoUserRow(); // demo user needs a real `user` row for FK-backed inserts
+    return DEMO_USER;
+  }
   throw new Error("You must be signed in.");
 }
 
