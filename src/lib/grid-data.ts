@@ -53,11 +53,32 @@ function tile(title: string, from: string, to: string): Tile {
 
 export type Package = { name: string; price: number; detail: string };
 
+/** Subject/industry categories a creative shoots — powers the Browse Category filter. */
+export const TALENT_CATEGORIES = [
+  "Portraits & People",
+  "Weddings & Celebrations",
+  "Events",
+  "Business & Corporate",
+  "Food & Hospitality",
+  "Products & E-Commerce",
+  "Fashion & Beauty",
+  "Automotive",
+  "Real Estate & Architecture",
+  "Music & Entertainment",
+  "Sports & Fitness",
+  "Travel & Tourism",
+  "Drone & Aerial",
+  "Nature & Wildlife",
+  "Creative & Editorial",
+] as const;
+export type TalentCategory = (typeof TALENT_CATEGORIES)[number];
+
 export type Creative = {
   id: string;
   name: string;
   type: string;
   cat: Category;
+  categories: TalentCategory[];
   city: string;
   distanceKm: number;
   rate: number;
@@ -78,6 +99,7 @@ export const CREATIVES: Creative[] = [
     name: "John Hope",
     type: "Real-Estate Photographer",
     cat: "Photo",
+    categories: ["Real Estate & Architecture", "Drone & Aerial", "Business & Corporate"],
     city: "Los Angeles",
     distanceKm: 2.4,
     rate: 3000,
@@ -106,6 +128,7 @@ export const CREATIVES: Creative[] = [
     name: "Maya Lindqvist",
     type: "Brand Filmmaker",
     cat: "Video",
+    categories: ["Business & Corporate", "Products & E-Commerce", "Fashion & Beauty", "Creative & Editorial"],
     city: "Oslo",
     distanceKm: 5.1,
     rate: 4200,
@@ -129,6 +152,7 @@ export const CREATIVES: Creative[] = [
     name: "Theo Vance",
     type: "Drone Pilot",
     cat: "Drone",
+    categories: ["Drone & Aerial", "Real Estate & Architecture", "Travel & Tourism", "Events"],
     city: "Dubai",
     distanceKm: 8.7,
     rate: 2800,
@@ -153,6 +177,7 @@ export const CREATIVES: Creative[] = [
     name: "Sara Okonkwo",
     type: "Editorial Photographer",
     cat: "Photo",
+    categories: ["Creative & Editorial", "Fashion & Beauty", "Portraits & People"],
     city: "London",
     distanceKm: 3.3,
     rate: 2500,
@@ -172,6 +197,7 @@ export const CREATIVES: Creative[] = [
     name: "Leo Brandt",
     type: "Event Filmmaker",
     cat: "Video",
+    categories: ["Events", "Weddings & Celebrations", "Music & Entertainment"],
     city: "Berlin",
     distanceKm: 11.2,
     rate: 3600,
@@ -190,6 +216,7 @@ export const CREATIVES: Creative[] = [
     name: "Nadia Reyes",
     type: "Drone Pilot",
     cat: "Drone",
+    categories: ["Drone & Aerial", "Nature & Wildlife", "Travel & Tourism", "Sports & Fitness"],
     city: "Barcelona",
     distanceKm: 6.0,
     rate: 2600,
