@@ -217,7 +217,7 @@ export default function WaitlistPage() {
                     if (status === "error") setStatus("idle");
                   }}
                   placeholder="you@studio.com"
-                  className="flex-1 rounded-full bg-white px-5 py-3.5 text-sm text-black shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)] outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-white/50"
+                  className="flex-1 rounded-full bg-white px-5 py-3.5 text-sm text-black shadow-[0_8px_30px_-12px_rgba(0,0,0,0.6)] outline-none placeholder:text-neutral-400"
                 />
                 <button
                   type="submit"
