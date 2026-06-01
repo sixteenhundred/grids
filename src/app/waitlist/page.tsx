@@ -9,23 +9,23 @@ import { joinWaitlist } from "@/lib/waitlist-actions";
 /*  Data — features (creators prioritised)                                     */
 /* -------------------------------------------------------------------------- */
 
-const CREATOR_FEATURES: { icon: IconName; label: string }[] = [
-  { icon: "command", label: "My Operation" },
-  { icon: "wallet", label: "Escrow Payments" },
-  { icon: "folder", label: "File Transfer" },
-  { icon: "file", label: "Contracts" },
-  { icon: "sparkles", label: "AI Studio" },
-  { icon: "shop", label: "Shop" },
-  { icon: "school", label: "Academy" },
-  { icon: "play", label: "Campaign" },
-  { icon: "kanban", label: "Creative CRM" },
-  { icon: "target", label: "First In Line" },
+const CREATOR_FEATURES: { icon: IconName; label: string; desc: string }[] = [
+  { icon: "command", label: "My Operation", desc: "Your studio command center — pipeline, earnings, and tasks in one place." },
+  { icon: "wallet", label: "Escrow Payments", desc: "Client funds held safely in escrow and released when work is approved." },
+  { icon: "folder", label: "File Transfer", desc: "Deliver finals to clients with secure, tracked download links." },
+  { icon: "file", label: "Contracts", desc: "Draft, send, and e-sign agreements that protect both sides." },
+  { icon: "sparkles", label: "AI Studio", desc: "Generate shoot concepts, briefs, and creative direction with AI." },
+  { icon: "shop", label: "Shop", desc: "Sell presets, LUTs, and digital products from your own storefront." },
+  { icon: "school", label: "Academy", desc: "Turn your expertise into courses and earn from teaching." },
+  { icon: "play", label: "Campaign", desc: "AI-researched marketing campaign concepts, ready to pitch to brands." },
+  { icon: "kanban", label: "Creative CRM", desc: "Track leads and deals through a visual sales pipeline." },
+  { icon: "target", label: "First In Line", desc: "Get matched to briefs first and send proposals ahead of the pack." },
 ];
 
-const CLIENT_FEATURES: { icon: IconName; label: string }[] = [
-  { icon: "sparkles", label: "Concierge" },
-  { icon: "layout", label: "Project Builder" },
-  { icon: "kanban", label: "Deliverable Tracker" },
+const CLIENT_FEATURES: { icon: IconName; label: string; desc: string }[] = [
+  { icon: "sparkles", label: "Concierge", desc: "Tell us your goal and we'll line up the right creatives for you." },
+  { icon: "layout", label: "Project Builder", desc: "Scope your shoot, budget, and deliverables in a guided flow." },
+  { icon: "kanban", label: "Deliverable Tracker", desc: "Follow every milestone and approve work as it lands." },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -86,17 +86,29 @@ function GlassHeadline() {
 /*  Feature pill                                                               */
 /* -------------------------------------------------------------------------- */
 
-function Pill({ icon, label, dim }: { icon: IconName; label: string; dim?: boolean }) {
+function Pill({ icon, label, desc, dim }: { icon: IconName; label: string; desc: string; dim?: boolean }) {
   return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full border backdrop-blur-md ${
-        dim
-          ? "border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60"
-          : "border-white/20 bg-white/[0.1] px-3.5 py-2 text-xs text-white/90 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.8)]"
-      }`}
-    >
-      <Icon name={icon} size={dim ? 13 : 15} className={dim ? "text-white/45" : "text-white/75"} />
-      {label}
+    <span className="group relative inline-block">
+      <span
+        tabIndex={0}
+        className={`inline-flex cursor-default items-center gap-2 rounded-full border outline-none backdrop-blur-md transition-colors ${
+          dim
+            ? "border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 hover:border-white/25 focus-visible:border-white/35"
+            : "border-white/20 bg-white/[0.1] px-3.5 py-2 text-xs text-white/90 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.8)] hover:border-white/40 focus-visible:border-white/50"
+        }`}
+      >
+        <Icon name={icon} size={dim ? 13 : 15} className={dim ? "text-white/45" : "text-white/75"} />
+        {label}
+      </span>
+
+      {/* hover / focus tooltip — sits above the pill so it clears the page edge */}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2.5 w-52 max-w-[80vw] -translate-x-1/2 translate-y-1 rounded-2xl border border-white/15 bg-[#0c0716]/90 px-3.5 py-2.5 text-center text-[11px] leading-relaxed text-white/80 opacity-0 shadow-[0_16px_50px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100"
+      >
+        {desc}
+        <span className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-white/15 bg-[#0c0716]/90" />
+      </span>
     </span>
   );
 }
@@ -228,7 +240,7 @@ export default function WaitlistPage() {
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {CREATOR_FEATURES.map((f) => (
-                <Pill key={f.label} icon={f.icon} label={f.label} />
+                <Pill key={f.label} icon={f.icon} label={f.label} desc={f.desc} />
               ))}
             </div>
 
@@ -237,7 +249,7 @@ export default function WaitlistPage() {
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {CLIENT_FEATURES.map((f) => (
-                <Pill key={f.label} icon={f.icon} label={f.label} dim />
+                <Pill key={f.label} icon={f.icon} label={f.label} desc={f.desc} dim />
               ))}
             </div>
           </div>
