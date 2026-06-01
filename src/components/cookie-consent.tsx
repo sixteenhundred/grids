@@ -59,7 +59,10 @@ export function CookieConsent() {
 
   if (!open) return null;
 
-  const btn = "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors";
+  // Identical style for EVERY choice — no button is highlighted over another
+  // (Constitution Art. IV: equal prominence, no misleading defaults).
+  const btn =
+    "flex-1 rounded-full border border-white/20 bg-white/[0.07] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/[0.14]";
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-[60] px-4 pb-4 sm:px-6 sm:pb-6">
@@ -77,13 +80,13 @@ export function CookieConsent() {
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {/* Equal prominence — reject is one click, same size as accept. */}
-              <button onClick={() => persist("accepted", { analytics: true, marketing: true })} className={`${btn} bg-white text-grid-black hover:brightness-95`}>
+              <button onClick={() => persist("accepted", { analytics: true, marketing: true })} className={btn}>
                 Accept all
               </button>
-              <button onClick={() => persist("rejected", { analytics: false, marketing: false })} className={`${btn} border border-white/20 bg-white/[0.04] text-white hover:bg-white/[0.1]`}>
+              <button onClick={() => persist("rejected", { analytics: false, marketing: false })} className={btn}>
                 Reject all
               </button>
-              <button onClick={() => setCustomize(true)} className={`${btn} border border-white/20 bg-white/[0.04] text-white hover:bg-white/[0.1]`}>
+              <button onClick={() => setCustomize(true)} className={btn}>
                 Customize
               </button>
             </div>
@@ -97,10 +100,10 @@ export function CookieConsent() {
               <Row title="Marketing" desc="Personalised content and measuring campaigns." checked={cats.marketing} onChange={(v) => setCats((c) => ({ ...c, marketing: v }))} />
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <button onClick={() => persist("customized", cats)} className={`${btn} bg-white text-grid-black hover:brightness-95`}>
+              <button onClick={() => persist("customized", cats)} className={btn}>
                 Save choices
               </button>
-              <button onClick={() => persist("rejected", { analytics: false, marketing: false })} className={`${btn} border border-white/20 bg-white/[0.04] text-white hover:bg-white/[0.1]`}>
+              <button onClick={() => persist("rejected", { analytics: false, marketing: false })} className={btn}>
                 Reject all
               </button>
             </div>
