@@ -21,7 +21,7 @@ const LINK_MAP: Record<string, string> = {
   Collab: "/signup",
   Finance: "/signup",
   About: "/signup",
-  "Trust & safety": "/terms",
+  "Trust & safety": "/trust",
   "Grid Escrow": "#escrow",
   Pricing: "#pricing",
   Contact: "/signup",
@@ -95,9 +95,10 @@ export function FinalCta() {
             © {2026} Grid. All rights reserved.
           </span>
           <div className="flex items-center gap-5 text-xs text-white/60">
-            <Link href="/terms" className="transition-colors hover:text-white">Privacy</Link>
-            <Link href="/terms" className="transition-colors hover:text-white">Terms</Link>
-            <Link href="#escrow" className="transition-colors hover:text-white">Escrow policy</Link>
+            <Link href="/trust" className="transition-colors hover:text-white">Trust Center</Link>
+            <Link href="/trust/privacy" className="transition-colors hover:text-white">Privacy</Link>
+            <Link href="/trust/legal/terms" className="transition-colors hover:text-white">Terms</Link>
+            <Link href="/trust/payments/escrow" className="transition-colors hover:text-white">Escrow</Link>
           </div>
         </div>
       </div>
