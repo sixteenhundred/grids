@@ -142,6 +142,9 @@ export function DashboardShell({
   }
   // Full literal class strings so Tailwind's JIT can see them.
   const accentText = role === "client" ? "text-client-green" : "text-grid-blue";
+  // Clients get the company "GRID for Clients" plans page; creators keep theirs.
+  const planHref = role === "client" ? "/dashboard/clients" : "/dashboard/subscription";
+  const planIsClient = role === "client";
 
   // Collapsible sidebar (persisted). Init expanded to match SSR, then hydrate.
   const [collapsed, setCollapsed] = useState(false);
@@ -241,15 +244,21 @@ export function DashboardShell({
 
         <div className="mt-4 border-t border-white/8 pt-4">
           <Link
-            href="/dashboard/subscription"
+            href={planHref}
             title={collapsed ? "Plans & upgrade" : undefined}
-            className={`mb-1 flex w-full items-center rounded-xl border border-grid-blue/25 bg-grid-blue/[0.08] py-2 text-sm font-medium text-white transition-colors hover:bg-grid-blue/[0.14] ${collapsed ? "justify-center px-0" : "gap-3 px-3"} ${isActive(pathname, "/dashboard/subscription") ? "ring-1 ring-grid-blue/40" : ""}`}
+            className={`mb-1 flex w-full items-center rounded-xl border py-2 text-sm font-medium text-white transition-colors ${
+              planIsClient
+                ? "border-client-green/25 bg-client-green/[0.08] hover:bg-client-green/[0.14]"
+                : "border-grid-blue/25 bg-grid-blue/[0.08] hover:bg-grid-blue/[0.14]"
+            } ${collapsed ? "justify-center px-0" : "gap-3 px-3"} ${isActive(pathname, planHref) ? (planIsClient ? "ring-1 ring-client-green/40" : "ring-1 ring-grid-blue/40") : ""}`}
           >
-            <Icon name="sparkles" size={19} className="text-aerial-cyan" />
+            <Icon name="sparkles" size={19} className={planIsClient ? "text-escrow-green" : "text-aerial-cyan"} />
             {!collapsed && (
               <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <span>Plans &amp; upgrade</span>
-                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+                {!planIsClient && (
+                  <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+                )}
               </span>
             )}
           </Link>
@@ -403,12 +412,16 @@ export function DashboardShell({
                 </div>
               ))}
               <Link
-                href="/dashboard/subscription"
+                href={planHref}
                 onClick={() => setDrawer(false)}
-                className="mt-6 flex items-center justify-between gap-2 rounded-2xl border border-grid-blue/25 bg-grid-blue/[0.1] px-4 py-3 text-sm font-medium text-white"
+                className={`mt-6 flex items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-medium text-white ${
+                  planIsClient ? "border-client-green/25 bg-client-green/[0.1]" : "border-grid-blue/25 bg-grid-blue/[0.1]"
+                }`}
               >
-                <span className="flex items-center gap-2"><Icon name="sparkles" size={18} className="text-aerial-cyan" /> Plans &amp; upgrade</span>
-                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+                <span className="flex items-center gap-2"><Icon name="sparkles" size={18} className={planIsClient ? "text-escrow-green" : "text-aerial-cyan"} /> Plans &amp; upgrade</span>
+                {!planIsClient && (
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70">{planLabel(plan)}</span>
+                )}
               </Link>
               <div className="mt-3 flex gap-2">
                 <button onClick={() => { setDrawer(false); open(<InviteSheet />); }} className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/12 py-3 text-sm text-white">
