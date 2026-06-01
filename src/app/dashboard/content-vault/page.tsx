@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PageHeader, Surface, Card, MediaTile, Icon } from "@/components/dashboard/ui";
+import { PageHeader, Card, MediaTile, Icon } from "@/components/dashboard/ui";
 import type { IconName } from "@/components/dashboard/icons";
 import { ASSETS, ASSET_FILTERS, isMediaAsset, type Asset, type AssetType } from "@/lib/clienthq";
 

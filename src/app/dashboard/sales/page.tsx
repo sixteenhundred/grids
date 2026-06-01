@@ -95,7 +95,6 @@ export default function SalesAssistantPage() {
   const { open } = useSheet();
   const pipeline = LEADS.reduce((a, l) => a + l.value, 0);
   const weighted = Math.round(LEADS.reduce((a, l) => a + (l.value * l.probability) / 100, 0));
-  const avgProb = Math.round(LEADS.reduce((a, l) => a + l.probability, 0) / LEADS.length);
   const sent = LEADS.filter((l) => l.proposal === "Sent" || l.proposal === "Negotiating" || l.proposal === "Won").length;
 
   return (

@@ -144,7 +144,7 @@ export function PostJobSheet() {
           <button
             key={c}
             onClick={() => setCat(c)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${cat === c ? "bg-client-green text-white" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${cat === c ? "bg-client-green text-on-accent" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
           >
             {c}
           </button>
@@ -331,7 +331,7 @@ function RolePicker({ role, onRole }: { role: string; onRole: (r: string) => voi
             key={r}
             type="button"
             onClick={() => onRole(r)}
-            className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${role === r ? "bg-grid-blue text-white" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
+            className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${role === r ? "bg-grid-blue text-on-accent" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
           >
             {r}
           </button>

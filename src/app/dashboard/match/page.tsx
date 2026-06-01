@@ -2,7 +2,7 @@
 
 import { PageHeader, Surface, Card, MediaTile, Button, Icon, Ring } from "@/components/dashboard/ui";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
-import { MATCHES, money, type Match } from "@/lib/createearn";
+import { MATCHES, type Match } from "@/lib/createearn";
 
 function Chips({ items, color = "white" }: { items: string[]; color?: "white" | "cyan" | "purple" }) {
   const cls = color === "cyan" ? "text-aerial-cyan ring-aerial-cyan/25 bg-aerial-cyan/10" : color === "purple" ? "text-ai-purple ring-ai-purple/25 bg-ai-purple/10" : "text-white/70 ring-white/10 bg-white/[0.05]";

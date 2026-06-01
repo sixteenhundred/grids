@@ -32,6 +32,20 @@ export async function demoLogin(email: string, password: string): Promise<boolea
   return false;
 }
 
+/** Enter as a guest — sets the demo session cookie with no credentials.
+ *  Powers the "Continue as guest" path so the platform can be showcased
+ *  without filling in login/signup. */
+export async function guestLogin(): Promise<void> {
+  const jar = await cookies();
+  jar.set(DEMO_COOKIE, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+}
+
 export async function demoLogout(): Promise<void> {
   const jar = await cookies();
   jar.delete(DEMO_COOKIE);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader, Surface, Button, Icon, StatusPill } from "@/components/dashboard/ui";
+import { PageHeader, Surface, Icon, StatusPill } from "@/components/dashboard/ui";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { BRANDS, money, type Brand } from "@/lib/createearn";
 

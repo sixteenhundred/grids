@@ -17,12 +17,12 @@ type AccentClasses = {
 };
 
 export const ACCENT: Record<Accent, AccentClasses> = {
-  blue: { text: "text-aerial-cyan", solid: "bg-grid-blue text-white", tint: "bg-grid-blue/12", ring: "ring-grid-blue/25", dot: "bg-grid-blue", border: "border-grid-blue/30" },
-  green: { text: "text-escrow-green", solid: "bg-client-green text-white", tint: "bg-client-green/12", ring: "ring-client-green/25", dot: "bg-client-green", border: "border-client-green/30" },
+  blue: { text: "text-aerial-cyan", solid: "bg-grid-blue text-on-accent", tint: "bg-grid-blue/12", ring: "ring-grid-blue/25", dot: "bg-grid-blue", border: "border-grid-blue/30" },
+  green: { text: "text-escrow-green", solid: "bg-client-green text-on-accent", tint: "bg-client-green/12", ring: "ring-client-green/25", dot: "bg-client-green", border: "border-client-green/30" },
   escrow: { text: "text-escrow-green", solid: "bg-escrow-green text-[#06140c]", tint: "bg-escrow-green/12", ring: "ring-escrow-green/25", dot: "bg-escrow-green", border: "border-escrow-green/30" },
   gold: { text: "text-review-gold", solid: "bg-review-gold text-[#1a1206]", tint: "bg-review-gold/12", ring: "ring-review-gold/25", dot: "bg-review-gold", border: "border-review-gold/30" },
-  red: { text: "text-urgent-red", solid: "bg-urgent-red text-white", tint: "bg-urgent-red/12", ring: "ring-urgent-red/25", dot: "bg-urgent-red", border: "border-urgent-red/30" },
-  purple: { text: "text-ai-purple", solid: "bg-ai-purple text-white", tint: "bg-ai-purple/12", ring: "ring-ai-purple/25", dot: "bg-ai-purple", border: "border-ai-purple/30" },
+  red: { text: "text-urgent-red", solid: "bg-urgent-red text-on-accent", tint: "bg-urgent-red/12", ring: "ring-urgent-red/25", dot: "bg-urgent-red", border: "border-urgent-red/30" },
+  purple: { text: "text-ai-purple", solid: "bg-ai-purple text-on-accent", tint: "bg-ai-purple/12", ring: "ring-ai-purple/25", dot: "bg-ai-purple", border: "border-ai-purple/30" },
   cyan: { text: "text-aerial-cyan", solid: "bg-aerial-cyan text-[#06121f]", tint: "bg-aerial-cyan/12", ring: "ring-aerial-cyan/25", dot: "bg-aerial-cyan", border: "border-aerial-cyan/30" },
 };
 
@@ -52,7 +52,7 @@ export function Surface({
       style={{ borderRadius: radius }}
     >
       <div
-        className={`flex h-full flex-col bg-[radial-gradient(130%_130%_at_0%_0%,#141519_0%,#0a0b0d_70%)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${inner}`}
+        className={`flex h-full flex-col bg-[radial-gradient(130%_130%_at_0%_0%,var(--color-card-from)_0%,var(--color-card-to)_70%)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] ${inner}`}
         style={{ borderRadius: `calc(${radius} - 0.375rem)` }}
       >
         {children}
@@ -387,8 +387,8 @@ export function Button({
   } else if (variant === "dark") {
     surface = "bg-white/8 text-white hover:bg-white/12";
   } else if (tone === "white") {
-    surface = "bg-white text-[#101114]";
-    innerBg = "bg-[#101114]/10";
+    surface = "bg-white text-grid-black";
+    innerBg = "bg-grid-black/10";
   } else {
     surface = ACCENT[tone].solid;
   }

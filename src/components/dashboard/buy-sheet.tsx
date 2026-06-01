@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSheet, SheetHeader } from "./sheet";
+import { useSheet } from "./sheet";
 import { Button, Icon, MediaTile, StatusPill } from "./ui";
 import { money } from "@/lib/grid-data";
 import type { ShopProduct } from "@/lib/shop";

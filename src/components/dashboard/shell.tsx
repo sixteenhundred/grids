@@ -11,6 +11,7 @@ import { useRole, RoleToggle } from "./role-context";
 import { useSheet } from "./sheet";
 import { NotificationsSheet, PostJobSheet, UploadSheet, InviteSheet } from "./sheets";
 import { Avatar } from "./ui";
+import { ThemeToggle } from "@/components/theme";
 import { Icon, type IconName } from "./icons";
 import type { Role } from "@/lib/grid-data";
 import { featureKeyForHref } from "@/lib/features";
@@ -186,7 +187,7 @@ export function DashboardShell({
       {/* ---------------------------------------------------------------- */}
       {/* Desktop sidebar                                                   */}
       {/* ---------------------------------------------------------------- */}
-      <aside className={`sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-[#0a0b0e]/60 py-6 backdrop-blur-xl transition-[width,padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:flex ${collapsed ? "w-[4.75rem] px-2.5" : "w-64 px-4"}`}>
+      <aside className={`sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-grid-black/60 py-6 backdrop-blur-xl transition-[width,padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:flex ${collapsed ? "w-[4.75rem] px-2.5" : "w-64 px-4"}`}>
         <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between px-1"}`}>
           {!collapsed && (
             <Link href="/dashboard" className="text-xl font-semibold tracking-tight text-white">
@@ -253,7 +254,7 @@ export function DashboardShell({
       {/* ---------------------------------------------------------------- */}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 bg-[#08090c]/70 px-4 py-3 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 bg-grid-black/70 px-4 py-3 backdrop-blur-xl sm:px-6">
           {/* universal back — appears on nested pages */}
           {canGoBack && (
             <button
@@ -279,11 +280,12 @@ export function DashboardShell({
           </Link>
 
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <ThemeToggle />
             <RoleToggle size="sm" />
             <button
               onClick={primaryAction}
               aria-label={role === "client" ? "Post a job" : "Add to portfolio"}
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-white transition-transform hover:scale-105 ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-on-accent transition-transform hover:scale-105 ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
             >
               <Icon name="plus" size={20} />
             </button>
@@ -293,7 +295,7 @@ export function DashboardShell({
               className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
               <Icon name="bell" size={19} />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-urgent-red ring-2 ring-[#08090c]" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-urgent-red ring-2 ring-grid-black" />
             </button>
             <Link href="/dashboard/profile" className="lg:hidden">
               <Avatar id="john" name={user.name} size={34} />
@@ -309,13 +311,13 @@ export function DashboardShell({
       {/* Mobile bottom nav                                                 */}
       {/* ---------------------------------------------------------------- */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5 lg:hidden">
-        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-[#16171b]/90 px-2 py-2 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-soft-black/90 px-2 py-2 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
           <BottomBtn href="/dashboard" icon="home" pathname={pathname} accent={accentText} />
           <BottomBtn href="/dashboard/browse" icon="compass" pathname={pathname} accent={accentText} />
           <button
             onClick={primaryAction}
             aria-label={role === "client" ? "Post a job" : "Add to portfolio"}
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-white ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-on-accent ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
           >
             <Icon name="plus" size={24} />
           </button>
@@ -347,7 +349,7 @@ export function DashboardShell({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "10%", opacity: 0 }}
               transition={{ duration: 0.4, ease: EASE_GRID }}
-              className="max-h-[85dvh] w-full overflow-y-auto rounded-t-[28px] border border-white/10 bg-[radial-gradient(130%_120%_at_50%_0%,#121318_0%,#08090b_60%)] px-5 pb-8 pt-3"
+              className="max-h-[85dvh] w-full overflow-y-auto rounded-t-[28px] border border-white/10 bg-[radial-gradient(130%_120%_at_50%_0%,var(--color-card-from)_0%,var(--color-grid-black)_60%)] px-5 pb-8 pt-3"
             >
               <div className="flex justify-center pb-3">
                 <span className="h-1.5 w-10 rounded-full bg-white/20" />

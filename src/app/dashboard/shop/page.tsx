@@ -104,7 +104,7 @@ function AddProductSheet({ onAdd }: { onAdd: (p: ShopProduct) => Promise<void> }
             key={k}
             type="button"
             onClick={() => setType(k)}
-            className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${type === k ? "bg-ai-purple text-white" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
+            className={`rounded-full px-3.5 py-1.5 text-sm transition-colors ${type === k ? "bg-ai-purple text-on-accent" : "bg-white/[0.05] text-white/60 hover:text-white"}`}
           >
             {k}
           </button>

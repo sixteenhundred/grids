@@ -6,7 +6,7 @@ import { Surface, Card, Button, Icon } from "@/components/dashboard/ui";
 import { StorefrontHeader, ProductLayout } from "@/components/dashboard/storefront";
 import { BuyProductSheet } from "@/components/dashboard/buy-sheet";
 import { useSheet } from "@/components/dashboard/sheet";
-import { DEFAULT_CONFIG, type ShopConfig, type ShopProduct } from "@/lib/shop";
+import { type ShopConfig, type ShopProduct } from "@/lib/shop";
 import { getShopById, listMyPurchases } from "@/lib/shop-actions";
 
 export default function ShopStorefrontPage() {

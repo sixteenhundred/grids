@@ -243,7 +243,7 @@ export default function CampaignPage() {
             disabled={!ready || generating}
             className={`group mt-8 flex w-full items-center justify-center gap-2.5 rounded-full py-4 text-base font-semibold tracking-tight transition-all duration-300 ${
               ready && !generating
-                ? "bg-ai-purple text-white hover:brightness-110"
+                ? "bg-ai-purple text-on-accent hover:brightness-110"
                 : "cursor-not-allowed bg-white/8 text-white/40"
             }`}
           >

@@ -66,7 +66,7 @@ export function RoleToggle({ size = "md" }: { size?: "sm" | "md" }) {
             role="tab"
             aria-selected={active}
             onClick={() => setRole(t.id)}
-            className={`relative z-10 rounded-full font-medium tracking-tight transition-colors duration-300 ${pad} ${active ? "text-white" : "text-white/55 hover:text-white/80"}`}
+            className={`relative z-10 rounded-full font-medium tracking-tight transition-colors duration-300 ${pad} ${active ? "text-on-accent" : "text-white/55 hover:text-white/80"}`}
           >
             {active && <motion.span layoutId="role-thumb" aria-hidden transition={SPRING_SOFT} className={`absolute inset-0 -z-10 rounded-full ${t.thumb}`} />}
             {t.label}

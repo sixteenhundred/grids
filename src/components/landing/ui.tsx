@@ -52,9 +52,9 @@ export function Cta({ href, children, variant = "solid", tone = "white" }: CtaPr
 
   const solid = {
     white: "bg-white text-[#101114]",
-    blue: "bg-grid-blue text-white shadow-[0_8px_40px_-10px] shadow-grid-blue/50",
+    blue: "bg-grid-blue text-on-accent shadow-[0_8px_40px_-10px] shadow-grid-blue/50",
     green:
-      "bg-client-green text-white shadow-[0_8px_40px_-10px] shadow-client-green/50",
+      "bg-client-green text-on-accent shadow-[0_8px_40px_-10px] shadow-client-green/50",
   }[tone];
   const innerBg = tone === "white" ? "bg-[#101114]/8" : "bg-white/20";
 

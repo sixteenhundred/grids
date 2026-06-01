@@ -32,7 +32,7 @@ export default function ProjectBuilderPage() {
 
       {/* Goal picker */}
       <div className="rise" style={{ animationDelay: "60ms" }}>
-        <div className="mb-3 text-[10px] uppercase tracking-[0.16em] text-white/40">What's your goal?</div>
+        <div className="mb-3 text-[10px] uppercase tracking-[0.16em] text-white/40">What&apos;s your goal?</div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {GOALS.map((g) => {
             const on = goal === g.id;

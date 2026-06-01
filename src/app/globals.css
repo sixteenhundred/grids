@@ -5,17 +5,24 @@
 /* -------------------------------------------------------------------------- */
 
 @theme inline {
-  /* Off-white / off-dark — never pure #fff or #000.
-     Overriding Tailwind's own --color-white / --color-black means every
-     text-white, bg-white, border-white/X and bg-black/X across the page
-     resolves to these softened values automatically. */
-  --color-white: #f5f5f7;
-  --color-black: #08090c;
+  /* Themeable surface/text tokens. Defined as var() so `@theme inline` emits
+     the *reference* (not a baked literal) into every text-white / bg-white /
+     border-white/X / bg-black/X utility — which therefore responds to the
+     per-[data-theme] runtime values defined below. */
+  --color-white: var(--c-fg); /* primary text + light surfaces */
+  --color-black: var(--c-ink); /* deep dark / scrims / overlays */
 
   /* Surfaces */
-  --color-grid-black: #08090c;
-  --color-soft-black: #101114;
-  --color-card-charcoal: #1c1c1e;
+  --color-grid-black: var(--c-bg); /* page background */
+  --color-soft-black: var(--c-surface-1);
+  --color-card-charcoal: var(--c-surface-2);
+
+  /* Card gradient stops (Surface) + always-light text for saturated accent
+     fills. --color-on-accent never inverts, so labels on coloured buttons
+     stay readable in BOTH themes. */
+  --color-card-from: var(--c-card-from);
+  --color-card-to: var(--c-card-to);
+  --color-on-accent: #f7f8fb;
 
   /* Accents */
   --color-grid-blue: #0071e3; /* creator-side primary */
@@ -33,13 +40,36 @@
   --ease-grid: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-:root {
+/* ── Theme value sets ──────────────────────────────────────────────────────
+   Dark is the default (and the explicit [data-theme="dark"]). Light inverts
+   the surface/text roles. Every token has a value in BOTH themes so nothing
+   inherits a fixed colour that breaks in the other mode. */
+:root,
+:root[data-theme="dark"] {
+  --c-fg: #f5f5f7; /* primary text */
+  --c-ink: #08090c; /* deep dark / scrim */
+  --c-bg: #08090c; /* page background */
+  --c-surface-1: #101114;
+  --c-surface-2: #1c1c1e;
+  --c-card-from: #141519;
+  --c-card-to: #0a0b0d;
   color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --c-fg: #17181d; /* text-white → near-black (AA on light) */
+  --c-ink: #0a0b0e; /* text-black stays dark; bg-black/x = subtle tint/scrim */
+  --c-bg: #f3f3f5; /* page background */
+  --c-surface-1: #ffffff;
+  --c-surface-2: #e9e9ec;
+  --c-card-from: #ffffff;
+  --c-card-to: #f3f4f6;
+  color-scheme: light;
 }
 
 body {
   background: var(--color-grid-black);
-  color: #f5f5f7;
+  color: var(--color-white);
   font-family: var(--font-sans), "SF Pro Display", -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

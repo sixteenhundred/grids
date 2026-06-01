@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Surface, Card, Button, Icon, StatusPill, ACCENT } from "@/components/dashboard/ui";
+import { Surface, Button, Icon, StatusPill, ACCENT } from "@/components/dashboard/ui";
 import type { IconName } from "@/components/dashboard/icons";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { useSession } from "@/lib/auth-client";
