@@ -30,8 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — NEVER commit real secrets. `.env*` covers .env, .env.local,
+# .env.development.local, .env.test.local, .env.production.local, etc.
 .env*
+# ...except the placeholders-only template, which MUST stay tracked:
+!.env.example
 
 # vercel
 .vercel
@@ -59,3 +62,7 @@ local.db-*
 # local archive snapshots
 grids-*.zip
 grids-[0-9a-f]*/
+
+# Generated UI mockup screenshots
+mockups/
+mockup2/
