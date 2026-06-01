@@ -89,7 +89,7 @@ export const TIERS: Tier[] = [
     gem: "star",
     price: 19.99,
     blurb: "Get discovered and grow — radar, trends and your growth toolkit.",
-    inheritsFrom: "Everything free, plus",
+    inheritsFrom: "Everything in Free, plus",
     features: [
       "Radar — urgent & nearby work",
       "Trends — market intelligence",
