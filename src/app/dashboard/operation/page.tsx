@@ -1,21 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Surface, Button, Icon, StatusPill, ACCENT } from "@/components/dashboard/ui";
+import { Surface, Button, Icon, ACCENT } from "@/components/dashboard/ui";
 import type { IconName } from "@/components/dashboard/icons";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
+import { OperationBackground } from "@/components/dashboard/operation-bg";
 import { useSession } from "@/lib/auth-client";
 import type { Accent } from "@/lib/grid-data";
 import {
   WIDGETS,
   ACCENTS,
+  BG_PRESETS,
   STATUS,
   PRIORITIES,
   URGENCY_META,
   OPERATIONS,
   OP_STAGES,
-  STAGE_ACCENT,
   stageProgress,
   TIMELINE,
   PIPE_STAGES,
@@ -41,6 +42,24 @@ import {
 
 const SPAN2 = new Set(["operations", "finance", "pipeline"]);
 
+/* Theme helpers — derive readable, on-dark colours from the chosen palette. */
+function hexToRgb(h: string): [number, number, number] {
+  const m = h.replace("#", "");
+  const n = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  const int = parseInt(n, 16);
+  return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+}
+/** Lift a palette colour toward white so it stays legible as text/dots on dark surfaces. */
+function bright(h: string): string {
+  const [r, g, b] = hexToRgb(h);
+  const lift = (c: number) => Math.round(c + (255 - c) * 0.45);
+  return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
+}
+function withAlpha(h: string, a: number): string {
+  const [r, g, b] = hexToRgb(h);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 /* ════════════════════════════════════════════════════════════════════════ */
 /*  Customize sheet                                                            */
 /* ════════════════════════════════════════════════════════════════════════ */
@@ -48,10 +67,17 @@ const SPAN2 = new Set(["operations", "finance", "pipeline"]);
 function CustomizeSheet({ ws, onChange }: { ws: Workspace; onChange: (w: Partial<Workspace>) => void }) {
   // Local copy so the inputs are editable; every change is applied live to the page.
   const [local, setLocal] = useState<Workspace>(ws);
+  const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!saved) return;
+    const t = setTimeout(() => setSaved(false), 1500);
+    return () => clearTimeout(t);
+  }, [saved]);
   function apply(patch: Partial<Workspace>) {
     setLocal((p) => ({ ...p, ...patch }));
-    onChange(patch);
+    onChange(patch); // persisted to localStorage by the page's update()
+    setSaved(true);
   }
   async function onBanner(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -67,6 +93,11 @@ function CustomizeSheet({ ws, onChange }: { ws: Workspace; onChange: (w: Partial
   return (
     <div>
       <SheetHeader title="Make it yours" subtitle="Name it, brand it, and arrange it however you work." />
+
+      <div className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1 text-[11px] text-white/55">
+        <Icon name="check" size={12} className={saved ? "text-escrow-green" : "text-white/40"} />
+        {saved ? "Saved" : "Changes save automatically"}
+      </div>
 
       <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Workspace name</label>
       <input
@@ -102,6 +133,54 @@ function CustomizeSheet({ ws, onChange }: { ws: Workspace; onChange: (w: Partial
         ))}
       </div>
 
+      <div className="mb-2 mt-5 flex items-center justify-between">
+        <label className="block text-xs uppercase tracking-[0.14em] text-white/45">Moving background</label>
+        <button
+          role="switch"
+          aria-checked={local.bg.on}
+          onClick={() => apply({ bg: { ...local.bg, on: !local.bg.on } })}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${local.bg.on ? "bg-grid-blue" : "bg-white/15"}`}
+        >
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${local.bg.on ? "left-[1.375rem]" : "left-0.5"}`} />
+        </button>
+      </div>
+      {local.bg.on && (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {BG_PRESETS.map((p) => {
+              const active = JSON.stringify(p.colors) === JSON.stringify(local.bg.colors);
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => apply({ bg: { ...local.bg, colors: p.colors }, accent: p.accent })}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${active ? "border-white/30 bg-white/[0.06] text-white" : "border-white/10 text-white/55 hover:text-white"}`}
+                >
+                  <span className="flex">{p.colors.map((c, i) => (<span key={i} className={`h-3 w-3 rounded-full ring-1 ring-black/40 ${i > 0 ? "-ml-1" : ""}`} style={{ background: c }} />))}</span>
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {local.bg.colors.map((c, i) => (
+              <input
+                key={i}
+                type="color"
+                value={c}
+                aria-label={`Background colour ${i + 1}`}
+                onChange={(e) => {
+                  const colors = [...local.bg.colors];
+                  colors[i] = e.target.value;
+                  apply({ bg: { ...local.bg, colors } });
+                }}
+                className="h-9 w-9 cursor-pointer rounded-lg border border-white/10 bg-transparent p-0.5"
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-white/40">Pick a palette or set each colour. The animation lives behind your widgets — turn it off any time.</p>
+        </>
+      )}
+
       {hidden.length > 0 && (
         <>
           <label className="mb-2 mt-5 block text-xs uppercase tracking-[0.14em] text-white/45">Hidden widgets</label>
@@ -127,8 +206,8 @@ function CustomizeSheet({ ws, onChange }: { ws: Workspace; onChange: (w: Partial
 /*  Small shared bits                                                          */
 /* ════════════════════════════════════════════════════════════════════════ */
 
-function Spark({ data, accent }: { data: number[]; accent: Accent }) {
-  const color = { blue: "#0071e3", cyan: "#5aa9f5", purple: "#9a7fe0", escrow: "#4fd07a", gold: "#f5a14f", red: "#ff3b30", green: "#1a9e4a" }[accent] ?? "#5aa9f5";
+function Spark({ data, accent, color: colorProp }: { data: number[]; accent: Accent; color?: string }) {
+  const color = colorProp ?? ({ blue: "#0071e3", cyan: "#5aa9f5", purple: "#9a7fe0", escrow: "#4fd07a", gold: "#f5a14f", red: "#ff3b30", green: "#1a9e4a" }[accent] ?? "#5aa9f5");
   const max = Math.max(...data) * 1.12;
   const W = 320, H = 64;
   const x = (i: number) => (i / (data.length - 1)) * W;
@@ -148,11 +227,34 @@ function Spark({ data, accent }: { data: number[]; accent: Accent }) {
   );
 }
 
-function Bar({ value, tone }: { value: number; tone: Accent }) {
+function Bar({ value, tone = "blue", color }: { value: number; tone?: Accent; color?: string }) {
   return (
     <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-      <div className={`h-full rounded-full ${ACCENT[tone].solid}`} style={{ width: `${Math.min(100, value)}%` }} />
+      {color ? (
+        <div className="h-full rounded-full" style={{ width: `${Math.min(100, value)}%`, background: color }} />
+      ) : (
+        <div className={`h-full rounded-full ${ACCENT[tone].solid}`} style={{ width: `${Math.min(100, value)}%` }} />
+      )}
     </div>
+  );
+}
+
+/** Pill coloured from the workspace palette (used across the widgets). */
+function ThemePill({ color, live = false, children }: { color: string; live?: boolean; children: ReactNode }) {
+  const fg = bright(color);
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider"
+      style={{ color: fg, backgroundColor: withAlpha(color, 0.14), boxShadow: `inset 0 0 0 1px ${withAlpha(color, 0.3)}` }}
+    >
+      {live && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: fg }} />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: fg }} />
+        </span>
+      )}
+      {children}
+    </span>
   );
 }
 
@@ -195,6 +297,15 @@ export default function OperationPage() {
   }
   const accent = ws.accent;
   const a = ACCENT[accent];
+
+  // The chosen palette is the workspace "theme" — it colours the status numbers
+  // and priority urgency, so the whole page matches the customization.
+  const palette = ws.bg.colors?.length ? ws.bg.colors : DEFAULT_WORKSPACE.bg.colors;
+  const themeAt = (i: number) => palette[i % palette.length];
+  const urgencyColor = (u: string) =>
+    u === "high" ? palette[0] : u === "med" ? palette[Math.floor((palette.length - 1) / 2)] : palette[palette.length - 1];
+  // Each operation stage gets its own palette colour (by stage order).
+  const opStageColor = (stage: Operation["stage"]) => themeAt(Math.max(0, OP_STAGES.indexOf(stage)));
 
   /* widget controls */
   const toggleCollapse = (id: string) => update({ collapsed: ws.collapsed.includes(id) ? ws.collapsed.filter((x) => x !== id) : [...ws.collapsed, id] });
@@ -241,12 +352,21 @@ export default function OperationPage() {
                   <button onClick={() => setDoneP((s) => new Set(s).add(p.id))} aria-label="Mark done" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/30 transition-colors hover:border-escrow-green hover:text-escrow-green">
                     <Icon name="check" size={13} />
                   </button>
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${m.dot}`} />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: bright(urgencyColor(p.urgency)) }} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-white">{p.label}</div>
                     <div className="truncate text-xs text-white/45">{p.sub}</div>
                   </div>
-                  <StatusPill tone={m.tone}>{m.label}</StatusPill>
+                  <span
+                    className="inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider"
+                    style={{
+                      color: bright(urgencyColor(p.urgency)),
+                      backgroundColor: withAlpha(urgencyColor(p.urgency), 0.14),
+                      boxShadow: `inset 0 0 0 1px ${withAlpha(urgencyColor(p.urgency), 0.3)}`,
+                    }}
+                  >
+                    {m.label}
+                  </span>
                   {p.href && (
                     <button onClick={() => router.push(p.href!)} className="shrink-0 text-white/30 transition-colors hover:text-white">
                       <Icon name="arrow" size={15} />
@@ -262,18 +382,18 @@ export default function OperationPage() {
         return (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {ops.map((op) => {
-              const st = STAGE_ACCENT[op.stage];
+              const c = opStageColor(op.stage);
               return (
                 <div key={op.id} className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
-                  <div className="relative h-16" style={{ backgroundImage: `linear-gradient(135deg, ${op.tile.from}, ${op.tile.to})` }}>
-                    <span className="absolute left-2.5 top-2.5"><StatusPill tone={st} live={op.stage !== "Delivery"}>{op.stage}</StatusPill></span>
+                  <div className="relative h-16" style={{ backgroundImage: `linear-gradient(135deg, ${c}, ${themeAt(OP_STAGES.indexOf(op.stage) + 1)})` }}>
+                    <span className="absolute left-2.5 top-2.5"><ThemePill color={c} live={op.stage !== "Delivery"}>{op.stage}</ThemePill></span>
                     <span className="absolute right-2.5 top-2.5 rounded-full bg-black/50 px-2 py-0.5 font-mono text-[11px] text-white/85 backdrop-blur">{money(op.value)}</span>
                   </div>
                   <div className="flex flex-1 flex-col p-3.5">
                     <div className="text-[11px] text-white/45">{op.client}</div>
                     <div className="truncate text-sm font-semibold text-white">{op.project}</div>
                     <div className="mt-3">
-                      <Bar value={stageProgress(op.stage)} tone={st} />
+                      <Bar value={stageProgress(op.stage)} color={bright(c)} />
                       <div className="mt-1.5 flex items-center justify-between text-[11px] text-white/45">
                         <span>{stageProgress(op.stage)}%</span>
                         <span className="inline-flex items-center gap-1"><Icon name="clock" size={11} /> {op.due}</span>
@@ -281,7 +401,7 @@ export default function OperationPage() {
                     </div>
                     <p className="mt-2.5 line-clamp-1 text-[11px] text-white/45">{op.activity}</p>
                     <div className="mt-3 flex items-center gap-2 border-t border-white/8 pt-3">
-                      <span className={`inline-flex items-center gap-1 text-[11px] ${op.payment === "Paid" ? "text-escrow-green" : op.payment === "In escrow" ? "text-aerial-cyan" : "text-review-gold"}`}>
+                      <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: bright(op.payment === "Paid" ? palette[palette.length - 1] : op.payment === "In escrow" ? themeAt(2) : palette[0]) }}>
                         <Icon name="wallet" size={11} /> {op.payment}
                       </span>
                       <button onClick={() => advance(op)} className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-white/15">
@@ -297,17 +417,17 @@ export default function OperationPage() {
         );
       case "timeline":
         return (
-          <div className="relative ml-1 border-l border-white/10 pl-5">
+          <div className="relative ml-1.5 border-l border-white/10 pl-7">
             {TIMELINE.map((e, i) => (
-              <div key={i} className="relative pb-4 last:pb-0">
-                <span className={`absolute -left-[1.47rem] top-1 flex h-5 w-5 items-center justify-center rounded-full ring-4 ring-[#0a0b0e] ${ACCENT[e.tone].tint} ${ACCENT[e.tone].text}`}>
-                  <Icon name={e.icon} size={11} />
+              <div key={i} className="relative pb-6 last:pb-0">
+                <span className="absolute -left-[2.5rem] top-0 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-[#0a0b0e]" style={{ color: bright(themeAt(i)), backgroundColor: withAlpha(themeAt(i), 0.16) }}>
+                  <Icon name={e.icon} size={13} />
                 </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-white">{e.label}</span>
+                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                  <span className="text-sm font-medium leading-tight text-white">{e.label}</span>
                   <span className="font-mono text-[10px] uppercase tracking-wide text-white/35">{e.day}</span>
                 </div>
-                <div className="text-xs text-white/45">{e.sub}</div>
+                <div className="mt-1 text-xs leading-relaxed text-white/45">{e.sub}</div>
               </div>
             ))}
           </div>
@@ -315,7 +435,7 @@ export default function OperationPage() {
       case "pipeline":
         return (
           <div className="grid gap-2.5 md:grid-cols-3 xl:grid-cols-5">
-            {PIPE_STAGES.map((s) => {
+            {PIPE_STAGES.map((s, si) => {
               const items = pipeline.filter((c) => c.stage === s.key);
               return (
                 <div
@@ -326,7 +446,7 @@ export default function OperationPage() {
                   className={`flex flex-col gap-2 rounded-2xl border p-2 transition-colors ${pipeOver === s.key ? "border-white/25 bg-white/[0.05]" : "border-white/8 bg-white/[0.015]"}`}
                 >
                   <div className="flex items-center justify-between px-1 pt-0.5 text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-white/80"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.accent }} /> {s.label}</span>
+                    <span className="inline-flex items-center gap-1.5 font-medium text-white/80"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: bright(themeAt(si)) }} /> {s.label}</span>
                     <span className="font-mono text-white/35">{items.length}</span>
                   </div>
                   {items.map((c) => (
@@ -343,14 +463,14 @@ export default function OperationPage() {
       case "deliverables":
         return (
           <div className="flex flex-col gap-2.5">
-            {DELIVERABLES.map((d) => (
+            {DELIVERABLES.map((d, i) => (
               <div key={d.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-white">{d.label} <span className="text-white/40">· {d.client}</span></span>
-                  <StatusPill tone={d.tone}>{d.status}</StatusPill>
+                  <ThemePill color={themeAt(i)}>{d.status}</ThemePill>
                 </div>
                 <div className="mt-2.5 flex items-center gap-3">
-                  <div className="flex-1"><Bar value={(d.done / d.total) * 100} tone={d.tone} /></div>
+                  <div className="flex-1"><Bar value={(d.done / d.total) * 100} color={bright(themeAt(i))} /></div>
                   <span className="font-mono text-xs text-white/55">{d.done}/{d.total}</span>
                 </div>
               </div>
@@ -362,9 +482,9 @@ export default function OperationPage() {
           <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.16em] text-white/40">Revenue this month</div>
-              <div className="font-mono text-3xl font-semibold tracking-tight text-escrow-green">{money(FINANCE.revenueMonth)}</div>
+              <div className="font-mono text-3xl font-semibold tracking-tight" style={{ color: bright(themeAt(0)) }}>{money(FINANCE.revenueMonth)}</div>
               <div className="mt-0.5 text-xs text-white/45">{money(FINANCE.revenueYear)} this year</div>
-              <Spark data={FINANCE.trend} accent={accent} />
+              <Spark data={FINANCE.trend} accent={accent} color={bright(themeAt(2))} />
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {[
                   { label: "Pending", value: money(FINANCE.pending) },
@@ -390,7 +510,7 @@ export default function OperationPage() {
                       <div className="truncate text-sm text-white/80">{u.label}</div>
                       <div className="text-[11px] text-white/40">{u.when}</div>
                     </div>
-                    <span className="shrink-0 font-mono text-sm font-semibold text-escrow-green">{money(u.value)}</span>
+                    <span className="shrink-0 font-mono text-sm font-semibold" style={{ color: bright(themeAt(0)) }}>{money(u.value)}</span>
                   </div>
                 ))}
               </div>
@@ -400,16 +520,16 @@ export default function OperationPage() {
       case "health":
         return (
           <div className="flex flex-col gap-2.5">
-            {CLIENT_HEALTH.map((c) => {
+            {CLIENT_HEALTH.map((c, i) => {
               const t = healthTier(c.score);
               return (
                 <div key={c.name} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold ${ACCENT[t.tone].tint} ${ACCENT[t.tone].text} ring-1 ${ACCENT[t.tone].ring}`}>{c.score}</span>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold" style={{ color: bright(themeAt(i)), backgroundColor: withAlpha(themeAt(i), 0.14), boxShadow: `inset 0 0 0 1px ${withAlpha(themeAt(i), 0.3)}` }}>{c.score}</span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-white">{c.name}</div>
                     <div className="truncate text-[11px] text-white/45">{c.note}</div>
                   </div>
-                  <StatusPill tone={t.tone}>{t.label}</StatusPill>
+                  <ThemePill color={themeAt(i)}>{t.label}</ThemePill>
                 </div>
               );
             })}
@@ -418,9 +538,9 @@ export default function OperationPage() {
       case "ai":
         return (
           <div className="flex flex-col gap-2.5">
-            {AI_INSIGHTS.filter((i) => !dismissedAi.has(i.id)).map((ins) => (
-              <div key={ins.id} className={`flex items-start gap-3 rounded-2xl border p-3 ${ACCENT[ins.tone].ring} bg-white/[0.02]`}>
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${ACCENT[ins.tone].tint} ${ACCENT[ins.tone].text}`}><Icon name={ins.icon} size={16} /></span>
+            {AI_INSIGHTS.filter((x) => !dismissedAi.has(x.id)).map((ins, i) => (
+              <div key={ins.id} className="flex items-start gap-3 rounded-2xl p-3 bg-white/[0.02]" style={{ boxShadow: `inset 0 0 0 1px ${withAlpha(themeAt(i), 0.3)}` }}>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ color: bright(themeAt(i)), backgroundColor: withAlpha(themeAt(i), 0.14) }}><Icon name={ins.icon} size={16} /></span>
                 <p className="min-w-0 flex-1 text-sm leading-snug text-white/75">{ins.text}</p>
                 <button onClick={() => setDismissedAi((s) => new Set(s).add(ins.id))} aria-label="Dismiss" className="shrink-0 text-white/30 transition-colors hover:text-white"><Icon name="x" size={14} /></button>
               </div>
@@ -431,9 +551,9 @@ export default function OperationPage() {
       case "feed":
         return (
           <div className="flex flex-col">
-            {OPS_FEED.map((f) => (
+            {OPS_FEED.map((f, i) => (
               <div key={f.id} className="flex items-center gap-3 border-b border-white/8 py-2.5 last:border-0">
-                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${ACCENT[f.tone].tint} ${ACCENT[f.tone].text}`}><Icon name={f.icon} size={14} /></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ color: bright(themeAt(i)), backgroundColor: withAlpha(themeAt(i), 0.14) }}><Icon name={f.icon} size={14} /></span>
                 <span className="min-w-0 flex-1 truncate text-sm text-white/75">{f.text}</span>
                 <span className="shrink-0 font-mono text-[11px] text-white/35">{f.when}</span>
               </div>
@@ -443,9 +563,9 @@ export default function OperationPage() {
       case "archive":
         return (
           <div className="flex flex-col gap-2">
-            {archive.map((ar) => (
+            {archive.map((ar, i) => (
               <div key={ar.id} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-3 opacity-75 transition-opacity hover:opacity-100">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-escrow-green/12 text-escrow-green ring-1 ring-escrow-green/25"><Icon name="check" size={14} /></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ color: bright(themeAt(i)), backgroundColor: withAlpha(themeAt(i), 0.14), boxShadow: `inset 0 0 0 1px ${withAlpha(themeAt(i), 0.25)}` }}><Icon name="check" size={14} /></span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-white/80">{ar.project}</div>
                   <div className="truncate text-[11px] text-white/40">{ar.client} · {ar.date}</div>
@@ -474,6 +594,7 @@ export default function OperationPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {mounted && <OperationBackground on={ws.bg.on} colors={ws.bg.colors} />}
       {/* ── Banner ─────────────────────────────────────────────────────── */}
       <div className="rise relative overflow-hidden rounded-[2rem] border border-white/10">
         <div className="relative h-44 sm:h-52">
@@ -507,10 +628,10 @@ export default function OperationPage() {
 
       {/* ── Status bar ─────────────────────────────────────────────────── */}
       <div className="rise grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8" style={{ animationDelay: "60ms" }}>
-        {statusItems.map((s) => (
+        {statusItems.map((s, i) => (
           <Surface key={s.label} radius="1.1rem" inner="p-3">
             <div className="truncate text-[9px] uppercase tracking-[0.12em] text-white/40">{s.label}</div>
-            <div className={`mt-0.5 font-mono text-lg font-semibold tracking-tight ${s.tone ? ACCENT[s.tone].text : "text-white"}`}>{s.value}</div>
+            <div className="mt-0.5 font-mono text-lg font-semibold tracking-tight" style={{ color: bright(themeAt(i)) }}>{s.value}</div>
           </Surface>
         ))}
       </div>

@@ -269,6 +269,17 @@ export const ACCENTS: { key: Accent; label: string; dot: string }[] = [
   { key: "red", label: "Cinematic", dot: "bg-urgent-red" },
 ];
 
+/** Animated "aurora" background palettes for the workspace (see OperationBackground).
+ *  `accent` is the closest UI accent token, so picking a palette also themes the
+ *  widget accents/buttons to match. */
+export const BG_PRESETS: { key: string; label: string; colors: string[]; accent: Accent }[] = [
+  { key: "aurora", label: "Aurora", colors: ["#f6c63f", "#ef8a26", "#de3a2f", "#9a31cf", "#4f43c9"], accent: "gold" },
+  { key: "sunset", label: "Sunset", colors: ["#ffd16b", "#ff8a3d", "#ff5e62", "#d62976", "#962fbf"], accent: "red" },
+  { key: "ocean", label: "Ocean", colors: ["#22d3ee", "#0ea5e9", "#3b82f6", "#6366f1", "#1e3a8a"], accent: "cyan" },
+  { key: "emerald", label: "Emerald", colors: ["#a7f3d0", "#34d399", "#10b981", "#059669", "#064e3b"], accent: "escrow" },
+  { key: "mono", label: "Mono", colors: ["#4a4a55", "#5a5a66", "#3a3a44", "#2a2a31", "#16161b"], accent: "blue" },
+];
+
 export type Workspace = {
   name: string;
   banner: string | null;
@@ -276,6 +287,7 @@ export type Workspace = {
   order: string[];
   hidden: string[];
   collapsed: string[];
+  bg: { on: boolean; colors: string[] };
 };
 
 const KEY = "grid:operation";
@@ -287,6 +299,7 @@ export const DEFAULT_WORKSPACE: Workspace = {
   order: WIDGETS.map((w) => w.id),
   hidden: [],
   collapsed: [],
+  bg: { on: true, colors: BG_PRESETS[0].colors },
 };
 
 export function loadWorkspace(): Workspace {
@@ -298,7 +311,12 @@ export function loadWorkspace(): Workspace {
     // Ensure any new widgets are included and unknown ids dropped.
     const known = WIDGETS.map((w) => w.id);
     const order = [...(parsed.order ?? []).filter((id) => known.includes(id)), ...known.filter((id) => !(parsed.order ?? []).includes(id))];
-    return { ...DEFAULT_WORKSPACE, ...parsed, order };
+    // Normalise the background config (backward-compatible with saves that predate it).
+    const bg = {
+      on: typeof parsed.bg?.on === "boolean" ? parsed.bg.on : DEFAULT_WORKSPACE.bg.on,
+      colors: Array.isArray(parsed.bg?.colors) && parsed.bg.colors.length ? parsed.bg.colors.slice(0, 6) : DEFAULT_WORKSPACE.bg.colors,
+    };
+    return { ...DEFAULT_WORKSPACE, ...parsed, order, bg };
   } catch {
     return DEFAULT_WORKSPACE;
   }
