@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { EASE_GRID } from "@/components/landing/motion";
 import { signOut } from "@/lib/auth-client";
 import { demoLogout } from "@/lib/demo-auth";
-import { useRole, RoleToggle } from "./role-context";
+import { useRole } from "./role-context";
 import { useSheet } from "./sheet";
 import { NotificationsSheet, PostJobSheet, UploadSheet, InviteSheet } from "./sheets";
 import { Avatar } from "./ui";
@@ -18,7 +18,7 @@ import type { Role } from "@/lib/grid-data";
 import { featureKeyForHref } from "@/lib/features";
 import { usePlan } from "./plan-context";
 import { planLabel } from "@/lib/plans";
-import { ExperienceSwitcher } from "@/components/experience-switcher";
+import { ExperienceToggle } from "@/components/experience-toggle";
 import type { FlagMap } from "@/lib/admin-types";
 
 type NavItem = { label: string; href: string; icon: IconName };
@@ -214,11 +214,6 @@ export function DashboardShell({
             <Icon name="chevron" size={18} className={collapsed ? "" : "rotate-180"} />
           </button>
         </div>
-        {!collapsed && (
-          <div className="mt-3 px-1">
-            <ExperienceSwitcher current="creators" />
-          </div>
-        )}
 
         <nav className="mt-7 flex-1 overflow-y-auto no-scrollbar">
           {groups.map((g, gi) => (
@@ -311,7 +306,6 @@ export function DashboardShell({
           <Link href="/dashboard" className={`text-lg font-semibold tracking-tight text-white lg:hidden ${canGoBack ? "hidden sm:block" : ""}`}>
             Grid<span className="text-grid-blue">.</span>
           </Link>
-          <ExperienceSwitcher current="creators" className="lg:hidden" />
 
           <Link
             href="/dashboard/browse"
@@ -323,7 +317,7 @@ export function DashboardShell({
 
           <div className="ml-auto flex items-center gap-2 lg:ml-0">
             <ThemeToggle />
-            <RoleToggle size="sm" />
+            <ExperienceToggle current="creator" size="sm" />
             <button
               onClick={primaryAction}
               aria-label={role === "client" ? "Post a job" : "Add to portfolio"}
