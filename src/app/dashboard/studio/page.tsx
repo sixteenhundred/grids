@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { PageHeader, IconTile, Surface, Card, MediaTile, Button, Icon, SectionHeader } from "@/components/dashboard/ui";
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { STUDIO_TOOLS } from "@/lib/grid-data";
@@ -11,10 +11,30 @@ import {
   saveCreations,
   relativeDate,
   TOOL_LABEL,
+  SCRIPT_LENGTHS,
+  SCRIPT_PACES,
+  SCRIPT_MOODS,
+  DEFAULT_SCRIPT_OPTIONS,
+  MAX_ACTORS,
   type StudioCreation,
   type StudioSection,
   type StudioToolKey,
+  type ScriptOptions,
 } from "@/lib/studio";
+
+/** Workflow chain: each tool offers to generate the next, so they work together. */
+const NEXT_TOOL: Record<StudioToolKey, StudioToolKey | null> = {
+  shotlist: "script",
+  script: "moodboard",
+  moodboard: "proposal",
+  proposal: null,
+};
+const CHAIN_CTA: Record<StudioToolKey, string> = {
+  shotlist: "Would you like a script with this?",
+  script: "Add a matching mood board?",
+  moodboard: "Turn this into a client proposal?",
+  proposal: "",
+};
 
 const TOOL_ICONS: Record<string, IconName> = {
   shotlist: "list",
@@ -85,17 +105,43 @@ function Sections({ sections }: { sections: StudioSection[] }) {
 /*  Create flow — brief → generate → save                                      */
 /* -------------------------------------------------------------------------- */
 
+function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${on ? "border-ai-purple/50 bg-ai-purple/[0.12] text-white" : "border-white/10 text-white/55 hover:text-white"}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function CreateSheet({ tool, onSave }: { tool: StudioToolKey; onSave: (c: StudioCreation) => void }) {
   const { close } = useSheet();
   const [brief, setBrief] = useState("");
+  const [opts, setOpts] = useState<ScriptOptions>(DEFAULT_SCRIPT_OPTIONS);
   const [result, setResult] = useState<StudioCreation | null>(null);
 
   if (result) {
+    const next = NEXT_TOOL[result.tool];
     return (
       <div>
         <SheetHeader title={result.title} subtitle="Review your draft, then save it to Studio." />
         <Sections sections={result.sections} />
         <div className="mt-7 flex flex-col gap-2.5">
+          {next && (
+            <button
+              type="button"
+              onClick={() => {
+                onSave(result); // keep this step, then chain into the next tool
+                setResult(generate(next, result.brief, next === "script" ? { description: result.brief } : undefined));
+              }}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-ai-purple/40 bg-ai-purple/[0.06] py-3 text-sm font-medium text-ai-purple transition-colors hover:bg-ai-purple/[0.12]"
+            >
+              <Icon name="sparkles" size={15} /> {CHAIN_CTA[result.tool]}
+            </button>
+          )}
           <Button full tone="purple" arrow onClick={() => { onSave(result); close(); }}>
             Save to Studio
           </Button>
@@ -107,20 +153,74 @@ function CreateSheet({ tool, onSave }: { tool: StudioToolKey; onSave: (c: Studio
     );
   }
 
+  const isScript = tool === "script";
   return (
     <div>
-      <SheetHeader title={TOOL_LABEL[tool]} subtitle="Describe the project — Grid Studio drafts the rest." />
-      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Brief</label>
+      <SheetHeader
+        title={TOOL_LABEL[tool]}
+        subtitle={isScript ? "Set the brief and filters — Grid Studio writes the full script." : "Describe the project — Grid Studio drafts the rest."}
+      />
+      <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">{isScript ? "Description" : "Brief"}</label>
       <textarea
         value={brief}
         onChange={(e) => setBrief(e.target.value)}
         rows={4}
         autoFocus
-        placeholder="e.g. Cliffside villa listing film, golden hour, drone + interiors"
+        placeholder={isScript ? "What's the film about? e.g. A spot for a new running shoe, city at dawn…" : "e.g. Cliffside villa listing film, golden hour, drone + interiors"}
         className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/35 focus:border-ai-purple/50"
       />
+
+      {isScript && (
+        <div className="mt-5 flex flex-col gap-4">
+          <div>
+            <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Category</label>
+            <div className="flex flex-wrap gap-2">
+              {SCRIPT_MOODS.map((m) => (
+                <Chip key={m.key} on={opts.mood === m.key} onClick={() => setOpts((o) => ({ ...o, mood: m.key }))}>{m.label}</Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Length</label>
+            <div className="flex flex-wrap gap-2">
+              {SCRIPT_LENGTHS.map((l) => (
+                <Chip key={l.key} on={opts.length === l.key} onClick={() => setOpts((o) => ({ ...o, length: l.key }))}>{l.label}</Chip>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+            <div>
+              <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Pace</label>
+              <div className="flex gap-2">
+                {SCRIPT_PACES.map((p) => (
+                  <Chip key={p.key} on={opts.pace === p.key} onClick={() => setOpts((o) => ({ ...o, pace: p.key }))}>{p.label}</Chip>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-xs uppercase tracking-[0.14em] text-white/45">Actors</label>
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                <button type="button" onClick={() => setOpts((o) => ({ ...o, actors: Math.max(1, o.actors - 1) }))} aria-label="Fewer actors" className="text-white/55 transition-colors hover:text-white">
+                  <Icon name="chevron" size={14} className="rotate-180" />
+                </button>
+                <span className="w-4 text-center font-mono text-sm text-white">{opts.actors}</span>
+                <button type="button" onClick={() => setOpts((o) => ({ ...o, actors: Math.min(MAX_ACTORS, o.actors + 1) }))} aria-label="More actors" className="text-white/55 transition-colors hover:text-white">
+                  <Icon name="chevron" size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6">
-        <Button full tone="purple" arrow disabled={!brief.trim()} onClick={() => setResult(generate(tool, brief))}>
+        <Button
+          full
+          tone="purple"
+          arrow
+          disabled={!brief.trim()}
+          onClick={() => setResult(generate(tool, brief, isScript ? { ...opts, description: brief } : undefined))}
+        >
           <Icon name="sparkles" size={15} /> Generate
         </Button>
       </div>
