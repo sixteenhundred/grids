@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/dashboard/icons";
 import { joinWaitlist } from "@/lib/waitlist-actions";
@@ -173,6 +174,14 @@ export default function WaitlistPage() {
       />
 
       {/* content */}
+      {/* Discreet entry into the live platform (demo). */}
+      <Link
+        href="/dashboard"
+        className="absolute right-5 top-5 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
+      >
+        Enter platform →
+      </Link>
+
       <div className="relative z-10 flex min-h-dvh flex-col">
         <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 pt-16">
           <GlassHeadline />

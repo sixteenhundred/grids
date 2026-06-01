@@ -234,6 +234,9 @@ export function DashboardShell({
         </nav>
 
         <div className="mt-4 border-t border-white/8 pt-4">
+          <Link href="/waitlist" title={collapsed ? "Waitlist page" : undefined} className={`mb-1 flex w-full items-center rounded-xl py-2 text-sm text-white/55 transition-colors hover:bg-white/[0.03] hover:text-white ${collapsed ? "justify-center px-0" : "gap-3 px-3"}`}>
+            <Icon name="globe" size={19} className="text-aerial-cyan" /> {!collapsed && <span>Waitlist page</span>}
+          </Link>
           <button onClick={() => open(<InviteSheet />)} title={collapsed ? "Invite & earn" : undefined} className={`mb-2 flex w-full items-center rounded-xl py-2 text-sm text-white/55 transition-colors hover:bg-white/[0.03] hover:text-white ${collapsed ? "justify-center px-0" : "gap-3 px-3"}`}>
             <Icon name="gift" size={19} className="text-review-gold" /> {!collapsed && <span>Invite &amp; earn</span>}
           </button>

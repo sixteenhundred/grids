@@ -73,7 +73,7 @@ export type Urgency = "high" | "med" | "low";
 export type Priority = { id: string; label: string; sub: string; urgency: Urgency; icon: IconName; href?: string };
 
 export const PRIORITIES: Priority[] = [
-  { id: "p1", label: "Deliver Porsche Edit", sub: "Due today · Meridian Auto", urgency: "high", icon: "upload", href: "/dashboard/transfer" },
+  { id: "p1", label: "Deliver Penthouse Edit", sub: "Due today · Meridian Estates", urgency: "high", icon: "upload", href: "/dashboard/transfer" },
   { id: "p2", label: "Approve contract — Bel Air", sub: "Awaiting your signature", urgency: "high", icon: "file", href: "/dashboard/contracts" },
   { id: "p3", label: "Invoice GMZ Group", sub: "$3,200 · 4 days overdue", urgency: "high", icon: "wallet", href: "/dashboard/finance" },
   { id: "p4", label: "Send preview gallery", sub: "Azure Hotels · Suite Campaign", urgency: "med", icon: "camera", href: "/dashboard/transfer" },
@@ -108,7 +108,7 @@ export type Operation = {
 const T = (from: string, to: string) => ({ from, to, title: "" });
 
 export const OPERATIONS: Operation[] = [
-  { id: "o1", client: "Meridian Auto", project: "Porsche brand film", stage: "Editing", due: "Today", payment: "In escrow", value: 9000, activity: "Rough cut shared for internal review", tile: T("#22384a", "#080e12") },
+  { id: "o1", client: "Meridian Estates", project: "Penthouse brand film", stage: "Editing", due: "Today", payment: "In escrow", value: 9000, activity: "Rough cut shared for internal review", tile: T("#22384a", "#080e12") },
   { id: "o2", client: "Northwind Studio", project: "Signature Estate — Bel Air", stage: "Review", due: "Jun 4", payment: "In escrow", value: 7150, activity: "Delivered selects — awaiting approval", tile: T("#1b2a4a", "#0a0c12") },
   { id: "o3", client: "Azure Hotels", project: "Suite Campaign — Miami", stage: "Production", due: "Jun 12", payment: "Pending", value: 11000, activity: "Shoot day 1 wrapped", tile: T("#0c3b5c", "#0a0f14") },
   { id: "o4", client: "Vogue Living", project: "Penthouse Editorial — NYC", stage: "Revision", due: "Jun 7", payment: "In escrow", value: 6000, activity: "Client requested 2 reframes", tile: T("#3a3320", "#0f0d08") },
@@ -122,7 +122,7 @@ export const OPERATIONS: Operation[] = [
 
 export type Event = { day: string; label: string; sub: string; icon: IconName; tone: Accent };
 export const TIMELINE: Event[] = [
-  { day: "Today", label: "Deliver Porsche edit", sub: "16:00 · Meridian Auto", icon: "upload", tone: "red" },
+  { day: "Today", label: "Deliver Penthouse edit", sub: "16:00 · Meridian Estates", icon: "upload", tone: "red" },
   { day: "Tomorrow", label: "Cliffside villa shoot", sub: "07:30 · Malibu", icon: "camera", tone: "gold" },
   { day: "Wed", label: "Payment release", sub: "$7,150 · Northwind", icon: "wallet", tone: "escrow" },
   { day: "Thu", label: "Equipment pickup", sub: "Gimbal + drone", icon: "video", tone: "cyan" },
@@ -161,7 +161,7 @@ export type Deliverable = { label: string; client: string; done: number; total: 
 export const DELIVERABLES: Deliverable[] = [
   { label: "Edited photos", client: "Northwind · Bel Air", done: 15, total: 40, status: "In progress", tone: "blue" },
   { label: "Reels", client: "Azure · Suite", done: 0, total: 2, status: "Pending", tone: "gold" },
-  { label: "Brand film", client: "Meridian · Porsche", done: 0, total: 1, status: "Awaiting approval", tone: "cyan" },
+  { label: "Brand film", client: "Meridian · Penthouse", done: 0, total: 1, status: "Awaiting approval", tone: "cyan" },
   { label: "Preview gallery", client: "Vogue · Penthouse", done: 1, total: 1, status: "Revision requested", tone: "red" },
 ];
 
@@ -180,7 +180,7 @@ export const FINANCE = {
   avgProject: 6900,
   upcoming: [
     { label: "Northwind — Bel Air", value: 7150, when: "Wed" },
-    { label: "Meridian — Porsche", value: 9000, when: "Fri" },
+    { label: "Meridian — Penthouse", value: 9000, when: "Fri" },
     { label: "Azure — Suite (50%)", value: 5500, when: "Jun 12" },
   ],
   trend: [5.2, 6.1, 5.8, 7.4, 6.9, 8.2, 7.6, 9.0, 8.4, 9.6, 8.9, 8.25],
@@ -194,7 +194,7 @@ export type ClientHealth = { name: string; score: number; note: string };
 export const CLIENT_HEALTH: ClientHealth[] = [
   { name: "Northwind Studio", score: 94, note: "Pays early · 6 repeat projects" },
   { name: "Azure Hotels", score: 88, note: "Fast comms · high value" },
-  { name: "Meridian Auto", score: 76, note: "New · responsive" },
+  { name: "Meridian Estates", score: 76, note: "New · responsive" },
   { name: "Vogue Living", score: 63, note: "Slow approvals" },
   { name: "GMZ Group", score: 41, note: "Late payment · overdue invoice" },
 ];
@@ -213,7 +213,7 @@ export type AiInsight = { id: string; text: string; tone: Accent; icon: IconName
 export const AI_INSIGHTS: AiInsight[] = [
   { id: "ai1", text: "GMZ Group hasn’t responded in 5 days — and their invoice is overdue. Send a follow-up?", tone: "red", icon: "comment" },
   { id: "ai2", text: "Coastline Realty contract expires tomorrow. Get it signed to lock the shoot.", tone: "gold", icon: "file" },
-  { id: "ai3", text: "Porsche Production Wallet is 12% over estimate. Review before the next expense.", tone: "gold", icon: "wallet" },
+  { id: "ai3", text: "Penthouse Production Wallet is 12% over estimate. Review before the next expense.", tone: "gold", icon: "wallet" },
   { id: "ai4", text: "You have capacity for 2 more projects this month based on your booked days.", tone: "escrow", icon: "check" },
   { id: "ai5", text: "Invoice GMZ today — payment terms hit the late window at midnight.", tone: "red", icon: "wallet" },
 ];
@@ -226,7 +226,7 @@ export type FeedItem = { id: string; text: string; when: string; icon: IconName;
 export const OPS_FEED: FeedItem[] = [
   { id: "f1", text: "Northwind signed the Signature Estate contract", when: "9:41", icon: "file", tone: "blue" },
   { id: "f2", text: "Payment received — $5,500 from Azure Hotels", when: "9:12", icon: "wallet", tone: "escrow" },
-  { id: "f3", text: "Meridian viewed your Porsche proposal", when: "8:50", icon: "comment", tone: "cyan" },
+  { id: "f3", text: "Meridian viewed your Penthouse proposal", when: "8:50", icon: "comment", tone: "cyan" },
   { id: "f4", text: "Files delivered — Resort Aerials to Azure", when: "Yesterday", icon: "upload", tone: "escrow" },
   { id: "f5", text: "Revision requested — Vogue Penthouse", when: "Yesterday", icon: "comment", tone: "red" },
   { id: "f6", text: "New lead applied — Solène restaurant", when: "Yesterday", icon: "target", tone: "purple" },
