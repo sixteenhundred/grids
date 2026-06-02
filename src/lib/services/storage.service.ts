@@ -1,48 +1,87 @@
+import "server-only";
+
 /**
- * Storage service — SCAFFOLD (AWS S3 / Cloudflare R2 — S3-compatible).
+ * Storage service — Supabase Storage, gated by the per-profile quota.
  *
- * No `@aws-sdk/*` import exists, so the build stays green without the package.
- * Methods report "unavailable" until activated.
+ * Object keys are namespaced by user id: `${userId}/${category}/${ts}-${name}`,
+ * so the storage RLS policy can scope access by `auth.uid()`. Server uploads use
+ * the service role (bypasses storage RLS) but ALWAYS go through the quota first.
+ * For direct browser uploads use `createSignedUploadUrl` (size pre-checked).
  *
- * ── To ACTIVATE ───────────────────────────────────────────────────────────
- *   1. `npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner`
- *   2. Set S3_REGION, S3_ENDPOINT (R2), S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
- *      S3_BUCKET in env.
- *   3. Uncomment the client slot and implement createSignedUploadUrl().
- *   ⚠️ Keep imports COMMENTED until installed (literal dynamic import breaks the build).
- *
- * ── SECURITY ───────────────────────────────────────────────────────────────
- *   • Prefer SIGNED upload URLs so raw credentials never reach the browser.
- *   • Validate file type, size, the caller's permission, and project ownership
- *     server-side BEFORE issuing a signed URL.
- *   • Keep public portfolio assets in a separate bucket/prefix from private
- *     project deliverables.
+ * SECURITY: keep raw credentials server-side; validate size/ownership before
+ * issuing a signed URL; private deliverables live behind signed download URLs.
  */
-import { isS3Configured } from "@/lib/env";
-import { ServiceUnavailableError } from "./types";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { reserveStorage, releaseStorage, checkFileSize } from "@/lib/quota";
+import { ok, fail, type ServiceResult } from "./types";
+
+export const BUCKET = "uploads";
 
 export function storageReady(): boolean {
-  return isS3Configured();
+  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 }
 
-// async function getS3() {
-//   if (!isS3Configured()) throw new ServiceUnavailableError("storage");
-//   const { S3Client } = await import("@aws-sdk/client-s3"); // add ONLY after install
-//   const e = getServerEnv();
-//   return new S3Client({
-//     region: e.S3_REGION ?? "auto",
-//     endpoint: e.S3_ENDPOINT,
-//     credentials: { accessKeyId: e.S3_ACCESS_KEY_ID!, secretAccessKey: e.S3_SECRET_ACCESS_KEY! },
-//   });
-// }
+const keyFor = (userId: string, category: string, name: string) =>
+  `${userId}/${category}/${Date.now()}-${name.replace(/[^\w.\-]+/g, "_")}`;
 
-export type SignedUploadParams = {
-  key: string; // server-derived object key (e.g. `deliverables/<projectId>/<uuid>`)
+/** Server-side upload (service role). Reserves quota first; rolls back on failure. */
+export async function uploadObject(params: {
+  userId: string;
+  category: string;
+  name: string;
+  bytes: number;
   contentType: string;
-  maxBytes: number;
-};
+  body: Buffer | Uint8Array | ArrayBuffer;
+}): Promise<ServiceResult<{ path: string }>> {
+  if (!storageReady()) return fail("unavailable", "Storage is not configured.");
+  const reserved = await reserveStorage(params.userId, params.bytes);
+  if (!reserved.ok) return fail("invalid_input", reserved.reason);
 
-/** Returns a short-lived signed PUT URL the browser can upload to directly. */
-export async function createSignedUploadUrl(_params: SignedUploadParams): Promise<{ url: string; key: string }> {
-  throw new ServiceUnavailableError("storage");
+  const path = keyFor(params.userId, params.category, params.name);
+  const supa = createSupabaseAdminClient();
+  const { error } = await supa.storage
+    .from(BUCKET)
+    .upload(path, params.body, { contentType: params.contentType, upsert: false });
+  if (error) {
+    await releaseStorage(params.userId, params.bytes);
+    return fail("provider_error", error.message);
+  }
+  return ok({ path });
+}
+
+/** Short-lived signed PUT URL for direct browser upload (size pre-checked). */
+export async function createSignedUploadUrl(params: {
+  userId: string;
+  category: string;
+  name: string;
+  bytes: number;
+}): Promise<ServiceResult<{ url: string; token: string; path: string }>> {
+  if (!storageReady()) return fail("unavailable", "Storage is not configured.");
+  const sized = checkFileSize(params.bytes);
+  if (!sized.ok) return fail("invalid_input", sized.reason);
+
+  const path = keyFor(params.userId, params.category, params.name);
+  const supa = createSupabaseAdminClient();
+  const { data, error } = await supa.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !data) return fail("provider_error", error?.message ?? "Could not create upload URL.");
+  return ok({ url: data.signedUrl, token: data.token, path });
+}
+
+/** Signed, expiring download URL for a private object. */
+export async function getSignedDownloadUrl(
+  path: string,
+  expiresIn = 3600,
+): Promise<ServiceResult<{ url: string }>> {
+  if (!storageReady()) return fail("unavailable", "Storage is not configured.");
+  const supa = createSupabaseAdminClient();
+  const { data, error } = await supa.storage.from(BUCKET).createSignedUrl(path, expiresIn);
+  if (error || !data) return fail("provider_error", error?.message ?? "Could not create download URL.");
+  return ok({ url: data.signedUrl });
+}
+
+/** Delete an object and free its quota. */
+export async function deleteObject(userId: string, path: string, bytes: number): Promise<void> {
+  const supa = createSupabaseAdminClient();
+  await supa.storage.from(BUCKET).remove([path]).catch(() => {});
+  await releaseStorage(userId, bytes);
 }
