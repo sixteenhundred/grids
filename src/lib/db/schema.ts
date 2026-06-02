@@ -95,6 +95,8 @@ export const product = pgTable("product", {
   coverImage: text("cover_image"),
   fileName: text("file_name"),
   fileSize: integer("file_size"),
+  // Supabase Storage object key for the actual deliverable (private bucket).
+  filePath: text("file_path"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),

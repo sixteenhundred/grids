@@ -18,6 +18,13 @@ import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { shop, product, purchase } from "./db/schema";
 import {
+  createSignedUploadUrl,
+  getSignedDownloadUrl,
+  deleteObject,
+  removeObject,
+} from "./services/storage.service";
+import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
+import {
   DEFAULT_CONFIG,
   SEED_PRODUCTS,
   tileForType,
@@ -63,6 +70,8 @@ function toProduct(row: ProductRow, shopName: string): ShopProduct {
     coverTile: tileForType(type),
     fileName: row.fileName,
     fileSize: row.fileSize,
+    // filePath is intentionally NOT exposed — downloads go via a purchase-gated
+    // signed URL keyed by product id, so the storage key never reaches clients.
     createdAt: row.createdAt.getTime(),
   };
 }
@@ -149,27 +158,95 @@ export async function updateShopConfig(config: ShopConfig): Promise<void> {
 export async function createProduct(input: NewProduct): Promise<ShopProduct> {
   const u = await requireShopOwner();
   const s = await ensureShopRow(u.id, u.name);
+
+  // If the file was uploaded (via createProductUploadUrl), reserve its quota now.
+  // Reserve is atomic; on over-limit drop the orphaned upload and reject.
+  if (input.filePath && input.fileSize) {
+    const reserved = await reserveStorage(u.id, input.fileSize);
+    if (!reserved.ok) {
+      await removeObject(input.filePath);
+      throw new Error(reserved.reason);
+    }
+  }
+
   const id = genId("prod");
-  await db.insert(product).values({
-    id,
-    shopId: s.id,
-    userId: u.id,
-    title: input.title.trim(),
-    description: input.description.trim(),
-    price: Math.max(0, Math.round(input.price)),
-    type: input.type,
-    coverImage: input.coverImage,
-    fileName: input.fileName,
-    fileSize: input.fileSize,
-    createdAt: new Date(),
-  });
+  try {
+    await db.insert(product).values({
+      id,
+      shopId: s.id,
+      userId: u.id,
+      title: input.title.trim(),
+      description: input.description.trim(),
+      price: Math.max(0, Math.round(input.price)),
+      type: input.type,
+      coverImage: input.coverImage,
+      fileName: input.fileName,
+      fileSize: input.fileSize,
+      filePath: input.filePath ?? null,
+      createdAt: new Date(),
+    });
+  } catch (e) {
+    // Roll back the reserved quota + uploaded object if the row insert failed.
+    if (input.filePath && input.fileSize) await deleteObject(u.id, input.filePath, input.fileSize);
+    throw e;
+  }
   const row = (await db.select().from(product).where(eq(product.id, id)).limit(1).then((r) => r[0]))!;
   return toProduct(row, s.name);
 }
 
+/**
+ * Issue a short-lived signed URL the browser uses to upload a product file
+ * directly to private Storage. Owner-gated + size-checked; a soft quota
+ * pre-check avoids handing out a URL when already full (the authoritative
+ * atomic reserve happens in createProduct once the path is recorded).
+ */
+export async function createProductUploadUrl(
+  name: string,
+  size: number,
+): Promise<{ path: string; token: string }> {
+  const u = await requireShopOwner();
+  const sized = checkFileSize(size);
+  if (!sized.ok) throw new Error(sized.reason);
+  const { storageBytes } = await getUsage(u.id);
+  if (storageBytes + size > MAX_STORAGE_BYTES) throw new Error("Storage limit reached (50 GB).");
+  const res = await createSignedUploadUrl({ userId: u.id, category: "products", name, bytes: size });
+  if (!res.ok) throw new Error(res.error);
+  return { path: res.data.path, token: res.data.token };
+}
+
+/**
+ * Purchase-gated signed download URL for a product's deliverable. Allowed for
+ * the product owner or anyone who has purchased it; everyone else is denied.
+ */
+export async function getProductDownloadUrl(productId: string): Promise<{ url: string } | null> {
+  const u = await requireUser();
+  const prod = await db.select().from(product).where(eq(product.id, productId)).limit(1).then((r) => r[0]);
+  if (!prod || !prod.filePath) return null;
+  if (prod.userId !== u.id) {
+    const bought = await db
+      .select({ id: purchase.id })
+      .from(purchase)
+      .where(and(eq(purchase.userId, u.id), eq(purchase.productId, productId)))
+      .limit(1)
+      .then((r) => r[0]);
+    if (!bought) throw new Error("You don't own this product.");
+  }
+  const res = await getSignedDownloadUrl(prod.filePath);
+  if (!res.ok) return null;
+  return { url: res.data.url };
+}
+
 export async function removeProduct(id: string): Promise<void> {
   const u = await requireShopOwner();
+  const prod = await db
+    .select({ filePath: product.filePath, fileSize: product.fileSize })
+    .from(product)
+    .where(and(eq(product.id, id), eq(product.userId, u.id)))
+    .limit(1)
+    .then((r) => r[0]);
   await db.delete(product).where(and(eq(product.id, id), eq(product.userId, u.id)));
+  // Free the stored object + its reserved quota (best-effort; row is already gone).
+  if (prod?.filePath && prod.fileSize) await deleteObject(u.id, prod.filePath, prod.fileSize);
 }
 
 /* -------------------------------------------------------------------------- */

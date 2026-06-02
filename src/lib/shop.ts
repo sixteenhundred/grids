@@ -48,6 +48,8 @@ export type NewProduct = {
   coverImage: string | null;
   fileName: string | null;
   fileSize: number | null;
+  // Storage object key of the uploaded file (null for demo seed rows).
+  filePath?: string | null;
 };
 
 /** A shop in the buyer-facing directory. */

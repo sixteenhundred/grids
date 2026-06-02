@@ -6,7 +6,7 @@ import { useSheet } from "./sheet";
 import { Button, Icon, MediaTile, StatusPill } from "./ui";
 import { money } from "@/lib/grid-data";
 import type { ShopProduct } from "@/lib/shop";
-import { purchaseProduct } from "@/lib/shop-actions";
+import { purchaseProduct, getProductDownloadUrl } from "@/lib/shop-actions";
 
 /**
  * Buyer checkout — mirrors the booking escrow language. Funds are "held" then
@@ -23,6 +23,7 @@ export function BuyProductSheet({
 }) {
   const { close } = useSheet();
   const [step, setStep] = useState<"view" | "paying" | "done">(owned ? "done" : "view");
+  const [downloading, setDownloading] = useState(false);
   const fee = Math.round(product.price * 0.05);
   const total = product.price + fee;
 
@@ -38,6 +39,19 @@ export function BuyProductSheet({
     setStep("done");
   }
 
+  // Fetch a short-lived, purchase-gated signed URL and open it. Delivery only —
+  // no payment/escrow logic here.
+  async function download() {
+    setDownloading(true);
+    try {
+      const res = await getProductDownloadUrl(product.id);
+      if (res?.url) window.open(res.url, "_blank", "noopener");
+    } catch {
+      /* ignore — button re-enables */
+    }
+    setDownloading(false);
+  }
+
   if (step === "done") {
     return (
       <div className="py-4 text-center">
@@ -49,8 +63,8 @@ export function BuyProductSheet({
           {product.title} is in your library. {product.fileName ?? "Your files"} is ready to download.
         </p>
         <div className="mt-6 flex flex-col gap-2.5">
-          <Button full onClick={close}>
-            <Icon name="upload" size={15} /> Download files
+          <Button full disabled={downloading} onClick={download}>
+            <Icon name="upload" size={15} /> {downloading ? "Preparing…" : "Download files"}
           </Button>
           <Link href={`/dashboard/shop/${product.shopId}`} onClick={close} className="text-sm font-medium text-white/50 transition-colors hover:text-white">
             View {product.shopName} →

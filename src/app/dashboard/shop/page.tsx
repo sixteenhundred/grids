@@ -6,21 +6,24 @@ import { StorefrontHeader, ProductLayout } from "@/components/dashboard/storefro
 import { useSheet, SheetHeader } from "@/components/dashboard/sheet";
 import { money } from "@/lib/grid-data";
 import { fileToImageDataUrl, formatSize, tileForType, PRODUCT_KINDS, DEFAULT_CONFIG, type ShopConfig, type ShopProduct, type ProductKind } from "@/lib/shop";
-import { getMyShop, createProduct, removeProduct } from "@/lib/shop-actions";
+import { getMyShop, createProduct, createProductUploadUrl, removeProduct } from "@/lib/shop-actions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { UPLOAD_BUCKET } from "@/lib/storage-shared";
 
 /* -------------------------------------------------------------------------- */
 /*  Add product                                                                */
 /* -------------------------------------------------------------------------- */
 
-function AddProductSheet({ onAdd }: { onAdd: (p: ShopProduct) => Promise<void> }) {
+function AddProductSheet({ onAdd }: { onAdd: (p: ShopProduct, filePath: string | null) => Promise<void> }) {
   const { close } = useSheet();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(29);
   const [type, setType] = useState<ProductKind>("Preset");
   const [cover, setCover] = useState<string | null>(null);
-  const [file, setFile] = useState<{ name: string; size: number } | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const coverRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -38,25 +41,40 @@ function AddProductSheet({ onAdd }: { onAdd: (p: ShopProduct) => Promise<void> }
   }
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (f) setFile({ name: f.name, size: f.size });
+    if (f) setFile(f);
   }
 
   async function submit() {
+    if (!file) return;
     setSaving(true);
-    await onAdd({
-      // id/shop fields are assigned server-side; locals satisfy the type.
-      id: "", shopId: "", shopName: "",
-      title: title.trim(),
-      description: description.trim(),
-      price: Math.max(0, Math.round(price)),
-      type,
-      coverImage: cover,
-      coverTile: tileForType(type),
-      fileName: file?.name ?? null,
-      fileSize: file?.size ?? null,
-      createdAt: Date.now(),
-    });
-    close();
+    setError(null);
+    try {
+      // Upload the deliverable straight to private Storage via a signed URL.
+      const { path, token } = await createProductUploadUrl(file.name, file.size);
+      const supabase = createSupabaseBrowserClient();
+      const { error: upErr } = await supabase.storage.from(UPLOAD_BUCKET).uploadToSignedUrl(path, token, file);
+      if (upErr) throw upErr;
+      await onAdd(
+        {
+          // id/shop fields are assigned server-side; locals satisfy the type.
+          id: "", shopId: "", shopName: "",
+          title: title.trim(),
+          description: description.trim(),
+          price: Math.max(0, Math.round(price)),
+          type,
+          coverImage: cover,
+          coverTile: tileForType(type),
+          fileName: file.name,
+          fileSize: file.size,
+          createdAt: Date.now(),
+        },
+        path,
+      );
+      close();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed. Please try again.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -142,6 +160,8 @@ function AddProductSheet({ onAdd }: { onAdd: (p: ShopProduct) => Promise<void> }
         </span>
       </button>
 
+      {error && <p className="mt-3 text-center text-xs text-urgent-red">{error}</p>}
+
       <div className="mt-6">
         <Button full tone="purple" arrow disabled={!canSave} onClick={submit}>
           {saving ? "Adding…" : "Add to shop"}
@@ -206,7 +226,7 @@ export default function ShopPage() {
     });
   }, []);
 
-  async function addProduct(draft: ShopProduct) {
+  async function addProduct(draft: ShopProduct, filePath: string | null) {
     const saved = await createProduct({
       title: draft.title,
       description: draft.description,
@@ -215,6 +235,7 @@ export default function ShopPage() {
       coverImage: draft.coverImage,
       fileName: draft.fileName,
       fileSize: draft.fileSize,
+      filePath,
     });
     setProducts((prev) => [saved, ...prev]);
   }

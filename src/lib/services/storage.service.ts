@@ -13,9 +13,10 @@ import "server-only";
  */
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { reserveStorage, releaseStorage, checkFileSize } from "@/lib/quota";
+import { UPLOAD_BUCKET } from "@/lib/storage-shared";
 import { ok, fail, type ServiceResult } from "./types";
 
-export const BUCKET = "uploads";
+export const BUCKET = UPLOAD_BUCKET;
 
 export function storageReady(): boolean {
   return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,9 +80,14 @@ export async function getSignedDownloadUrl(
   return ok({ url: data.signedUrl });
 }
 
-/** Delete an object and free its quota. */
-export async function deleteObject(userId: string, path: string, bytes: number): Promise<void> {
+/** Remove an object from the bucket WITHOUT touching quota (orphan cleanup). */
+export async function removeObject(path: string): Promise<void> {
   const supa = createSupabaseAdminClient();
   await supa.storage.from(BUCKET).remove([path]).catch(() => {});
+}
+
+/** Delete an object and free its quota. */
+export async function deleteObject(userId: string, path: string, bytes: number): Promise<void> {
+  await removeObject(path);
   await releaseStorage(userId, bytes);
 }
