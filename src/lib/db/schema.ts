@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   jsonb,
+  index,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -68,7 +69,10 @@ export const profile = pgTable("profile", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  // listCreators filters on published, newest first.
+  index("profile_published_idx").on(t.published),
+]);
 
 /** A creator's portfolio image (bytes in private Storage; served via signed URL). */
 export const portfolioItem = pgTable("portfolio_item", {
@@ -83,7 +87,7 @@ export const portfolioItem = pgTable("portfolio_item", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [index("portfolio_user_id_idx").on(t.userId)]);
 
 /**
  * A creator's bookable package. `price` is the creator's own listed price (same
@@ -101,7 +105,7 @@ export const creatorPackage = pgTable("creator_package", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [index("cpackage_user_id_idx").on(t.userId)]);
 
 /** A creator's storefront — one per user. */
 export const shop = pgTable("shop", {
@@ -146,7 +150,10 @@ export const product = pgTable("product", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("product_shop_id_idx").on(t.shopId),
+  index("product_user_id_idx").on(t.userId),
+]);
 
 /** A buyer's purchase of a product — powers the buyer "owned" state. */
 export const purchase = pgTable("purchase", {
@@ -161,7 +168,10 @@ export const purchase = pgTable("purchase", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("purchase_user_id_idx").on(t.userId),
+  index("purchase_product_id_idx").on(t.productId),
+]);
 
 /* -------------------------------------------------------------------------- */
 /*  Grid Academy — school → path → lesson                                      */
@@ -199,7 +209,10 @@ export const academyEnrollment = pgTable("academy_enrollment", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("enrollment_user_id_idx").on(t.userId),
+  index("enrollment_academy_id_idx").on(t.academyId),
+]);
 
 export const learningPath = pgTable("learning_path", {
   id: text("id").primaryKey(),
@@ -217,7 +230,10 @@ export const learningPath = pgTable("learning_path", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("path_academy_id_idx").on(t.academyId),
+  index("path_user_id_idx").on(t.userId),
+]);
 
 export const lesson = pgTable("lesson", {
   id: text("id").primaryKey(),
@@ -234,7 +250,10 @@ export const lesson = pgTable("lesson", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("lesson_path_id_idx").on(t.pathId),
+  index("lesson_user_id_idx").on(t.userId),
+]);
 
 export const lessonProgress = pgTable("lesson_progress", {
   id: text("id").primaryKey(),
@@ -247,7 +266,10 @@ export const lessonProgress = pgTable("lesson_progress", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("progress_user_id_idx").on(t.userId),
+  index("progress_lesson_id_idx").on(t.lessonId),
+]);
 
 /* -------------------------------------------------------------------------- */
 /*  Bookings / contracts / reviews / disputes (relational data)                */
@@ -278,7 +300,10 @@ export const contract = pgTable("contract", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("contract_creator_id_idx").on(t.creatorId),
+  index("contract_client_id_idx").on(t.clientId),
+]);
 
 /** Append-only version history of a contract's terms (audit trail). */
 export const contractVersion = pgTable("contract_version", {
@@ -298,7 +323,10 @@ export const contractVersion = pgTable("contract_version", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("cversion_contract_id_idx").on(t.contractId),
+  index("cversion_editor_id_idx").on(t.editorId),
+]);
 
 /** A review left for a creative or a company by a real user. */
 export const review = pgTable("review", {
@@ -317,7 +345,10 @@ export const review = pgTable("review", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("review_subject_id_idx").on(t.subjectId),
+  index("review_author_id_idx").on(t.authorId),
+]);
 
 /**
  * A dispute opened against a contract. Non-money scaffold for Phase 3: refund
@@ -342,7 +373,10 @@ export const dispute = pgTable("dispute", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [
+  index("dispute_contract_id_idx").on(t.contractId),
+  index("dispute_opened_by_id_idx").on(t.openedById),
+]);
 
 /* -------------------------------------------------------------------------- */
 /*  Admin — site-wide feature flags                                            */
@@ -368,7 +402,7 @@ export const waitlist = pgTable("waitlist", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [index("waitlist_unsubscribe_token_idx").on(t.unsubscribeToken)]);
 
 /* -------------------------------------------------------------------------- */
 /*  Platform config (DB-backed CMS) + subscriptions + usage quotas             */
@@ -433,7 +467,7 @@ export const auditEvent = pgTable("audit_event", {
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
-});
+}, (t) => [index("audit_user_id_idx").on(t.userId)]);
 
 /** Per-user consent state (cookies / AI / marketing). Withdrawable any time. */
 export const consent = pgTable("consent", {
