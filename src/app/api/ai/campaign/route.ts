@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, authErrorResponse, type AuthedUser } from "@/lib/security/auth-guard";
+import { canAccessFeature } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { generateConcepts } from "@/lib/campaign-actions";
 
@@ -33,6 +34,12 @@ export async function POST(req: Request) {
     user = await requireUser();
   } catch (err) {
     return authErrorResponse(err);
+  }
+
+  // 1.5) Entitlement gate — "campaign" is a paid feature. Mirrors the client
+  // nav-hide so a direct POST can't bypass it. No-op while DEMO_MODE is on.
+  if (!(await canAccessFeature(user.id, "campaign"))) {
+    return NextResponse.json({ error: "This feature requires a higher plan." }, { status: 403 });
   }
 
   // 2) Rate-limit per user — AI calls are paid, so cap abuse and cost.

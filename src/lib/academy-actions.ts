@@ -11,6 +11,7 @@
 
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
+import { requireFeatureAccess } from "./entitlements";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { academy, academyEnrollment, learningPath, lesson, lessonProgress } from "./db/schema";
@@ -42,6 +43,13 @@ function genId(prefix: string): string {
 async function requireUser() {
   const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
   await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  return u;
+}
+
+/** Running an academy is the gated "academy" feature; enrolling/learning is NOT. */
+async function requireAcademyOwner() {
+  const u = await requireUser();
+  await requireFeatureAccess(u.id, "academy"); // throws AuthError(403) below plan; no-op in demo
   return u;
 }
 
@@ -167,13 +175,13 @@ async function ensureAcademyRow(userId: string, userName?: string | null): Promi
 /* -------------------------------------------------------------------------- */
 
 export async function getMyAcademy(): Promise<MyAcademy> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   const a = await ensureAcademyRow(u.id, u.name);
   return { academyId: a.id, config: toConfig(a), paths: await pathsWithCounts(a.id, a.name, u.id) };
 }
 
 export async function updateAcademyConfig(config: AcademyConfig): Promise<void> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   const a = await ensureAcademyRow(u.id, u.name);
   await db
     .update(academy)
@@ -189,7 +197,7 @@ export async function updateAcademyConfig(config: AcademyConfig): Promise<void> 
 }
 
 export async function createPath(input: NewPath): Promise<LearningPath> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   const a = await ensureAcademyRow(u.id, u.name);
   const id = genId("path");
   await db.insert(learningPath).values({
@@ -207,12 +215,12 @@ export async function createPath(input: NewPath): Promise<LearningPath> {
 }
 
 export async function removePath(id: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   await db.delete(learningPath).where(and(eq(learningPath.id, id), eq(learningPath.userId, u.id)));
 }
 
 export async function createLesson(pathId: string, input: NewLesson): Promise<Lesson> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).limit(1).then((r) => r[0]);
   if (!p || p.userId !== u.id) throw new Error("Not allowed.");
   const countRow = await db.select({ n: sql<number>`count(*)` }).from(lesson).where(eq(lesson.pathId, pathId)).limit(1).then((r) => r[0]);
@@ -232,7 +240,7 @@ export async function createLesson(pathId: string, input: NewLesson): Promise<Le
 }
 
 export async function removeLesson(id: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireAcademyOwner();
   await db.delete(lesson).where(and(eq(lesson.id, id), eq(lesson.userId, u.id)));
 }
 

@@ -17,6 +17,7 @@ import { subscription } from "./db/schema";
 import { DEMO_MODE } from "./client/config";
 import { FEATURE_PLAN, planRank, type PlanId } from "./plans";
 import { FEATURE_MIN_PLAN, clientPlanRank, type ClientPlanId } from "./client/config";
+import { AuthError } from "./security/auth-guard";
 
 export type Entitlement = { plan: string; status: string };
 
@@ -48,4 +49,20 @@ export async function canAccessFeature(userId: string, key: string): Promise<boo
   if (clientNeed) return clientPlanRank(plan as ClientPlanId) >= clientPlanRank(clientNeed);
 
   return true; // not a gated feature
+}
+
+/**
+ * Server-side gate for a protected action. Throws AuthError(403) if the user's
+ * plan does not include `key`. Mirrors the client nav-hide/upgrade-wall so a
+ * direct action call can't bypass it. Inert while DEMO_MODE is on (everything
+ * unlocked); enforces tiers once demo mode is off at launch.
+ *
+ * Apply ONLY to creator/owner write paths (e.g. running a shop/academy), never
+ * to buyer/learner paths — purchasing or enrolling must not require the
+ * creator's plan.
+ */
+export async function requireFeatureAccess(userId: string, key: string): Promise<void> {
+  if (!(await canAccessFeature(userId, key))) {
+    throw new AuthError(403, "This feature requires a higher plan.");
+  }
 }

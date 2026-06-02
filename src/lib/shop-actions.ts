@@ -12,6 +12,7 @@
 
 import { and, desc, eq, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
+import { requireFeatureAccess } from "./entitlements";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { shop, product, purchase } from "./db/schema";
@@ -37,6 +38,13 @@ function genId(prefix: string): string {
 async function requireUser() {
   const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
   await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  return u;
+}
+
+/** Running a shop is the gated "shop" feature; buying from one is NOT. */
+async function requireShopOwner() {
+  const u = await requireUser();
+  await requireFeatureAccess(u.id, "shop"); // throws AuthError(403) below plan; no-op in demo
   return u;
 }
 
@@ -112,14 +120,14 @@ async function ensureShopRow(userId: string, userName?: string | null): Promise<
 /* -------------------------------------------------------------------------- */
 
 export async function getMyShop(): Promise<{ shopId: string; config: ShopConfig; products: ShopProduct[] }> {
-  const u = await requireUser();
+  const u = await requireShopOwner();
   const s = await ensureShopRow(u.id, u.name);
   const rows = await db.select().from(product).where(eq(product.shopId, s.id)).orderBy(desc(product.createdAt));
   return { shopId: s.id, config: toConfig(s), products: rows.map((r) => toProduct(r, s.name)) };
 }
 
 export async function updateShopConfig(config: ShopConfig): Promise<void> {
-  const u = await requireUser();
+  const u = await requireShopOwner();
   const s = await ensureShopRow(u.id, u.name);
   await db
     .update(shop)
@@ -135,7 +143,7 @@ export async function updateShopConfig(config: ShopConfig): Promise<void> {
 }
 
 export async function createProduct(input: NewProduct): Promise<ShopProduct> {
-  const u = await requireUser();
+  const u = await requireShopOwner();
   const s = await ensureShopRow(u.id, u.name);
   const id = genId("prod");
   await db.insert(product).values({
@@ -156,7 +164,7 @@ export async function createProduct(input: NewProduct): Promise<ShopProduct> {
 }
 
 export async function removeProduct(id: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireShopOwner();
   await db.delete(product).where(and(eq(product.id, id), eq(product.userId, u.id)));
 }
 
