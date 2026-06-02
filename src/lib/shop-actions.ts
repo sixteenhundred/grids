@@ -10,14 +10,11 @@
  * Every product file/image lives in SQLite for now (images as data URLs).
  */
 
-import { headers } from "next/headers";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { hasDemoSession } from "./demo-auth";
-import { DEMO_USER } from "./demo";
-import { ensureDemoUserRow } from "./demo-user";
+import { requireUser as requireAuth } from "./security/auth-guard";
+import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { shop, product, purchase } from "./db/schema";
-import { auth } from "./auth";
 import {
   DEFAULT_CONFIG,
   SEED_PRODUCTS,
@@ -38,13 +35,9 @@ function genId(prefix: string): string {
 }
 
 async function requireUser() {
-  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  if (session) return session.user;
-  if (await hasDemoSession()) {
-    await ensureDemoUserRow(); // demo user needs a real `user` row for FK-backed inserts
-    return DEMO_USER;
-  }
-  throw new Error("You must be signed in.");
+  const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
+  await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  return u;
 }
 
 function toProduct(row: ProductRow, shopName: string): ShopProduct {
@@ -77,7 +70,7 @@ function toConfig(s: ShopRow): ShopConfig {
 
 /** Get the caller's shop, creating + seeding it on first visit. */
 async function ensureShopRow(userId: string, userName?: string | null): Promise<ShopRow> {
-  const existing = await db.select().from(shop).where(eq(shop.userId, userId)).get();
+  const existing = await db.select().from(shop).where(eq(shop.userId, userId)).limit(1).then((r) => r[0]);
   if (existing) return existing;
 
   const id = genId("shop");
@@ -111,7 +104,7 @@ async function ensureShopRow(userId: string, userName?: string | null): Promise<
     })),
   );
 
-  return (await db.select().from(shop).where(eq(shop.id, id)).get())!;
+  return (await db.select().from(shop).where(eq(shop.id, id)).limit(1).then((r) => r[0]))!;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -158,7 +151,7 @@ export async function createProduct(input: NewProduct): Promise<ShopProduct> {
     fileSize: input.fileSize,
     createdAt: new Date(),
   });
-  const row = (await db.select().from(product).where(eq(product.id, id)).get())!;
+  const row = (await db.select().from(product).where(eq(product.id, id)).limit(1).then((r) => r[0]))!;
   return toProduct(row, s.name);
 }
 
@@ -203,7 +196,7 @@ export async function listShops(): Promise<ShopSummary[]> {
 export async function getShopById(
   shopId: string,
 ): Promise<{ shopId: string; config: ShopConfig; products: ShopProduct[] } | null> {
-  const s = await db.select().from(shop).where(eq(shop.id, shopId)).get();
+  const s = await db.select().from(shop).where(eq(shop.id, shopId)).limit(1).then((r) => r[0]);
   if (!s) return null;
   const rows = await db.select().from(product).where(eq(product.shopId, s.id)).orderBy(desc(product.createdAt));
   return { shopId: s.id, config: toConfig(s), products: rows.map((r) => toProduct(r, s.name)) };
@@ -215,9 +208,9 @@ export async function purchaseProduct(productId: string): Promise<void> {
     .select()
     .from(purchase)
     .where(and(eq(purchase.userId, u.id), eq(purchase.productId, productId)))
-    .get();
+    .limit(1).then((r) => r[0]);
   if (already) return;
-  const prod = await db.select().from(product).where(eq(product.id, productId)).get();
+  const prod = await db.select().from(product).where(eq(product.id, productId)).limit(1).then((r) => r[0]);
   if (!prod) throw new Error("Product not found.");
   await db.insert(purchase).values({
     id: genId("buy"),

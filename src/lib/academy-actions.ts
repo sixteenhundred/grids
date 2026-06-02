@@ -9,14 +9,11 @@
  *          setLessonComplete.
  */
 
-import { headers } from "next/headers";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { hasDemoSession } from "./demo-auth";
-import { DEMO_USER } from "./demo";
-import { ensureDemoUserRow } from "./demo-user";
+import { requireUser as requireAuth } from "./security/auth-guard";
+import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { academy, academyEnrollment, learningPath, lesson, lessonProgress } from "./db/schema";
-import { auth } from "./auth";
 import {
   DEFAULT_ACADEMY,
   SEED_PATHS,
@@ -43,13 +40,9 @@ function genId(prefix: string): string {
 }
 
 async function requireUser() {
-  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  if (session) return session.user;
-  if (await hasDemoSession()) {
-    await ensureDemoUserRow(); // demo user needs a real `user` row for FK-backed inserts
-    return DEMO_USER;
-  }
-  throw new Error("You must be signed in.");
+  const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
+  await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  return u;
 }
 
 function toConfig(a: AcademyRow): AcademyConfig {
@@ -62,7 +55,7 @@ async function isEnrolled(userId: string, academyId: string): Promise<boolean> {
     .select()
     .from(academyEnrollment)
     .where(and(eq(academyEnrollment.userId, userId), eq(academyEnrollment.academyId, academyId)))
-    .get();
+    .limit(1).then((r) => r[0]);
   return !!row;
 }
 
@@ -120,7 +113,7 @@ async function pathsWithCounts(academyId: string, academyName: string, userId: s
 }
 
 async function ensureAcademyRow(userId: string, userName?: string | null): Promise<AcademyRow> {
-  const existing = await db.select().from(academy).where(eq(academy.userId, userId)).get();
+  const existing = await db.select().from(academy).where(eq(academy.userId, userId)).limit(1).then((r) => r[0]);
   if (existing) return existing;
 
   const id = genId("acad");
@@ -166,7 +159,7 @@ async function ensureAcademyRow(userId: string, userName?: string | null): Promi
     }
   }
 
-  return (await db.select().from(academy).where(eq(academy.id, id)).get())!;
+  return (await db.select().from(academy).where(eq(academy.id, id)).limit(1).then((r) => r[0]))!;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -209,7 +202,7 @@ export async function createPath(input: NewPath): Promise<LearningPath> {
     coverImage: input.coverImage,
     createdAt: new Date(),
   });
-  const row = (await db.select().from(learningPath).where(eq(learningPath.id, id)).get())!;
+  const row = (await db.select().from(learningPath).where(eq(learningPath.id, id)).limit(1).then((r) => r[0]))!;
   return toPath(row, a.name, 0, 0);
 }
 
@@ -220,9 +213,9 @@ export async function removePath(id: string): Promise<void> {
 
 export async function createLesson(pathId: string, input: NewLesson): Promise<Lesson> {
   const u = await requireUser();
-  const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).get();
+  const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).limit(1).then((r) => r[0]);
   if (!p || p.userId !== u.id) throw new Error("Not allowed.");
-  const countRow = await db.select({ n: sql<number>`count(*)` }).from(lesson).where(eq(lesson.pathId, pathId)).get();
+  const countRow = await db.select({ n: sql<number>`count(*)` }).from(lesson).where(eq(lesson.pathId, pathId)).limit(1).then((r) => r[0]);
   const position = Number(countRow?.n ?? 0);
   const id = genId("les");
   await db.insert(lesson).values({
@@ -235,7 +228,7 @@ export async function createLesson(pathId: string, input: NewLesson): Promise<Le
     position,
     createdAt: new Date(),
   });
-  return toLesson((await db.select().from(lesson).where(eq(lesson.id, id)).get())!);
+  return toLesson((await db.select().from(lesson).where(eq(lesson.id, id)).limit(1).then((r) => r[0]))!);
 }
 
 export async function removeLesson(id: string): Promise<void> {
@@ -274,7 +267,7 @@ export async function listMyEnrollments(): Promise<string[]> {
 
 export async function enrollAcademy(academyId: string): Promise<void> {
   const u = await requireUser();
-  const a = await db.select().from(academy).where(eq(academy.id, academyId)).get();
+  const a = await db.select().from(academy).where(eq(academy.id, academyId)).limit(1).then((r) => r[0]);
   if (!a) throw new Error("Academy not found.");
   if (await isEnrolled(u.id, academyId)) return;
   await db.insert(academyEnrollment).values({ id: genId("enr"), userId: u.id, academyId, price: a.price, createdAt: new Date() });
@@ -282,7 +275,7 @@ export async function enrollAcademy(academyId: string): Promise<void> {
 
 export async function getAcademyById(academyId: string): Promise<AcademyView | null> {
   const u = await requireUser();
-  const a = await db.select().from(academy).where(eq(academy.id, academyId)).get();
+  const a = await db.select().from(academy).where(eq(academy.id, academyId)).limit(1).then((r) => r[0]);
   if (!a) return null;
   const isOwner = a.userId === u.id;
   const enrolled = isOwner ? true : await isEnrolled(u.id, a.id);
@@ -292,9 +285,9 @@ export async function getAcademyById(academyId: string): Promise<AcademyView | n
 
 export async function getPath(pathId: string): Promise<PathDetail | null> {
   const u = await requireUser();
-  const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).get();
+  const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).limit(1).then((r) => r[0]);
   if (!p) return null;
-  const a = await db.select().from(academy).where(eq(academy.id, p.academyId)).get();
+  const a = await db.select().from(academy).where(eq(academy.id, p.academyId)).limit(1).then((r) => r[0]);
   const academyName = a?.name ?? "Academy";
   const academyPrice = a?.price ?? 0;
   const isOwner = p.userId === u.id;
@@ -320,10 +313,10 @@ export async function getPath(pathId: string): Promise<PathDetail | null> {
 
 export async function getLesson(lessonId: string): Promise<LessonDetail | null> {
   const u = await requireUser();
-  const l = await db.select().from(lesson).where(eq(lesson.id, lessonId)).get();
+  const l = await db.select().from(lesson).where(eq(lesson.id, lessonId)).limit(1).then((r) => r[0]);
   if (!l) return null;
-  const p = await db.select().from(learningPath).where(eq(learningPath.id, l.pathId)).get();
-  const a = p ? await db.select().from(academy).where(eq(academy.id, p.academyId)).get() : null;
+  const p = await db.select().from(learningPath).where(eq(learningPath.id, l.pathId)).limit(1).then((r) => r[0]);
+  const a = p ? await db.select().from(academy).where(eq(academy.id, p.academyId)).limit(1).then((r) => r[0]) : null;
   const academyPrice = a?.price ?? 0;
   const isOwner = l.userId === u.id;
   const locked = academyPrice > 0 && !isOwner && !(p ? await isEnrolled(u.id, p.academyId) : false);
@@ -333,7 +326,7 @@ export async function getLesson(lessonId: string): Promise<LessonDetail | null> 
     .select()
     .from(lessonProgress)
     .where(and(eq(lessonProgress.userId, u.id), eq(lessonProgress.lessonId, lessonId)))
-    .get();
+    .limit(1).then((r) => r[0]);
   return {
     lesson: toLesson(l),
     pathId: l.pathId,
@@ -358,7 +351,7 @@ export async function setLessonComplete(lessonId: string, done: boolean): Promis
       .select()
       .from(lessonProgress)
       .where(and(eq(lessonProgress.userId, u.id), eq(lessonProgress.lessonId, lessonId)))
-      .get();
+      .limit(1).then((r) => r[0]);
     if (!existing) {
       await db.insert(lessonProgress).values({ id: genId("prog"), userId: u.id, lessonId, createdAt: new Date() });
     }

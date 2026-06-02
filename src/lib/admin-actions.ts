@@ -12,13 +12,10 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { sql, lt } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "./db";
-import { featureFlag, session } from "./db/schema";
-import { auth } from "./auth";
-import { hasDemoSession } from "./demo-auth";
-import { DEMO_USER } from "./demo";
+import { featureFlag } from "./db/schema";
+import { getCurrentUser } from "./security/auth-guard";
 import { isAdminEmail } from "./admin";
 import { FEATURE_DEFAULTS, FEATURE_KEYS } from "./features";
 import type {
@@ -43,12 +40,7 @@ const memFlags: FlagMap = {};
 /* -------------------------------------------------------------------------- */
 
 async function currentEmail(): Promise<string | null> {
-  const sessionData = await auth.api
-    .getSession({ headers: await headers() })
-    .catch(() => null);
-  if (sessionData?.user?.email) return sessionData.user.email;
-  if (await hasDemoSession()) return DEMO_USER.email;
-  return null;
+  return (await getCurrentUser())?.email ?? null;
 }
 
 async function requireAdmin(): Promise<string> {
@@ -220,21 +212,11 @@ export async function auditServer(): Promise<AuditReport> {
 
 export async function cleanServer(): Promise<ServerActionResult> {
   await requireAdmin();
-  let expiredSessionsRemoved = 0;
-  try {
-    const removed = await db
-      .delete(session)
-      .where(lt(session.expiresAt, new Date()))
-      .returning({ id: session.id });
-    expiredSessionsRemoved = removed.length;
-  } catch {
-    // No DB — nothing to clean there.
-  }
+  // Supabase Auth manages session expiry; nothing to purge here.
   revalidatePath("/", "layout");
   return {
     ok: true,
-    message: "Caches revalidated, expired sessions cleared.",
-    detail: { expiredSessionsRemoved },
+    message: "Caches revalidated. (Sessions are managed by Supabase Auth.)",
   };
 }
 

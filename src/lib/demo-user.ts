@@ -1,30 +1,21 @@
 /**
- * Demo user persistence.
+ * Mirror-row helper.
  *
- * The demo user (see `DEMO_USER`) is a non-blocking auth fallback that normally
- * never touches the database. But per-user features (shop, academy, …) insert
- * rows whose `user_id` is a FOREIGN KEY into `user`, so seeding those for the
- * demo user fails the constraint unless a matching `user` row exists.
- *
- * This idempotently inserts that row. Server-only — imported solely by server
- * actions; never import it into client code.
+ * Supabase `auth.users` is the source of truth; a DB trigger mirrors each into
+ * `public.user` so FK-backed inserts (shop, academy, …) resolve. This is a
+ * belt-and-suspenders upsert for the *current* caller, in case an action runs
+ * before the trigger row is visible. Server-only.
  */
 import { db } from "./db";
 import { user } from "./db/schema";
-import { DEMO_USER } from "./demo";
 
-let ensured = false; // skip the DB round-trip after the first success this process
+const ensured = new Set<string>();
 
-export async function ensureDemoUserRow(): Promise<void> {
-  if (ensured) return;
+export async function ensureUserRow(u: { id: string; email: string; name: string }): Promise<void> {
+  if (ensured.has(u.id)) return;
   await db
     .insert(user)
-    .values({
-      id: DEMO_USER.id,
-      name: DEMO_USER.name,
-      email: DEMO_USER.email,
-      emailVerified: true,
-    })
+    .values({ id: u.id, name: u.name, email: u.email, emailVerified: true })
     .onConflictDoNothing();
-  ensured = true;
+  ensured.add(u.id);
 }

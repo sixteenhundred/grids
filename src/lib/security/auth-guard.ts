@@ -1,15 +1,13 @@
 /**
- * Route/action auth guards (SERVER-ONLY — imports next/headers).
+ * Route/action auth guards (SERVER-ONLY).
  *
- * Mirrors the existing `auth.api.getSession({ headers })` + demo-session
- * fallback + isAdminEmail() pattern used across the server actions, so behavior
- * stays consistent. Use in API routes and server actions that need a caller.
+ * Reads the Supabase Auth session (cookie-bound). Use in API routes and server
+ * actions that need the caller's identity. The returned `id` is the Supabase
+ * `auth.uid()`, which is mirrored into `public.user` by a DB trigger so FK-backed
+ * inserts resolve.
  */
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasDemoSession } from "@/lib/demo-auth";
-import { DEMO_USER } from "@/lib/demo";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 
 export type AuthedUser = { id: string; email: string; name: string };
@@ -23,12 +21,19 @@ export class AuthError extends Error {
   }
 }
 
-/** Current caller (real Better Auth session or demo fallback), or null. */
+/** Current caller from the Supabase session, or null. */
 export async function getCurrentUser(): Promise<AuthedUser | null> {
-  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  if (session?.user) return { id: session.user.id, email: session.user.email, name: session.user.name };
-  if (await hasDemoSession()) return { id: DEMO_USER.id, email: DEMO_USER.email, name: DEMO_USER.name };
-  return null;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const name = (user.user_metadata?.name as string | undefined) ?? user.email ?? "Member";
+  return {
+    id: user.id,
+    email: user.email ?? `anon-${user.id}@grid.local`,
+    name,
+  };
 }
 
 /** Require any authenticated caller; throws AuthError(401) otherwise. */

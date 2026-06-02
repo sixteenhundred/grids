@@ -1,7 +1,4 @@
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { hasDemoSession } from "@/lib/demo-auth";
-import { DEMO_USER } from "@/lib/demo";
+import { getCurrentUser } from "@/lib/security/auth-guard";
 import { isAdminEmail } from "@/lib/admin";
 import { getFlags } from "@/lib/admin-actions";
 import { ThemeProvider } from "@/components/theme";
@@ -17,18 +14,13 @@ import { FeatureGate } from "@/components/dashboard/feature-gate";
 export const maxDuration = 60;
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Demo mode: auth is NON-BLOCKING. We read any real/demo session for the
-  // signed-in identity, but never redirect away — anyone can click straight
-  // into the platform as a guest (falls back to the demo user). The login UI
-  // still exists and works; it's just optional. To re-enable the auth gate,
-  // redirect to "/login" when there's no session below.
-  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  const demo = await hasDemoSession();
-
-  const user = session?.user ?? DEMO_USER;
-  const isAdmin = isAdminEmail(user.email);
+  // Auth is NON-BLOCKING during the build/demo phase: we read the Supabase
+  // session for the signed-in identity but never redirect. Guests use the
+  // "Continue as guest" anonymous sign-in. At launch, gate behind PLATFORM_LIVE.
+  const current = await getCurrentUser();
+  const user = current ?? { name: "Guest", email: "" };
+  const isAdmin = isAdminEmail(current?.email);
   const flags = await getFlags();
-  void demo; // detected for parity; not used to gate access in demo mode
 
   return (
     <ThemeProvider>
