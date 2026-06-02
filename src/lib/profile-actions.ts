@@ -148,6 +148,7 @@ export type MyProfile = {
   categories: string[];
   available: boolean;
   published: boolean;
+  verified: boolean;
   portfolio: { id: string; url: string; title: string }[];
   packages: { id: string; name: string; price: number; detail: string }[];
   reviews: Review[];
@@ -183,6 +184,7 @@ export async function getMyProfile(): Promise<MyProfile> {
     categories: (p.categories as string[]) ?? [],
     available: p.available,
     published: p.published,
+    verified: p.verified,
     portfolio,
     packages,
     reviews,
