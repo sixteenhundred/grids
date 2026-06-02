@@ -8,6 +8,8 @@ import {
   auditServer,
   cleanServer,
   restartServer,
+  setPlatformLiveFlag,
+  type WaitlistEntry,
 } from "@/lib/admin-actions";
 import {
   FEATURES,
@@ -30,12 +32,17 @@ function fmtUptime(ms: number): string {
 export function AdminPanel({
   initialFlags,
   initialAudit,
+  initialLive,
+  initialWaitlist,
 }: {
   initialFlags: FlagMap;
   initialAudit: AuditReport;
+  initialLive: boolean;
+  initialWaitlist: WaitlistEntry[];
 }) {
   const [flags, setFlags] = useState<FlagMap>(initialFlags);
   const [audit, setAudit] = useState<AuditReport>(initialAudit);
+  const [live, setLive] = useState(initialLive);
   const [log, setLog] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
@@ -138,6 +145,67 @@ export function AdminPanel({
           {log.text}
         </div>
       )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Launch + waitlist                                                 */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="mb-10">
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-white">Launch</h2>
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                <Icon name="globe" size={16} className={live ? "text-escrow-green" : "text-review-gold"} />
+                Platform {live ? "live" : "hidden (waitlist only)"}
+              </div>
+              <div className="mt-0.5 text-xs text-white/45">
+                {live
+                  ? "Public can reach the full platform."
+                  : "Public sees only the waitlist. Admins keep full access."}
+              </div>
+            </div>
+            <Toggle
+              checked={live}
+              tone="purple"
+              label="Platform live"
+              onChange={(next) => {
+                setLive(next); // optimistic
+                start(async () => {
+                  try {
+                    note(await setPlatformLiveFlag(next));
+                  } catch {
+                    setLive(!next);
+                    setLog({ ok: false, text: "Failed — admin access required." });
+                  }
+                });
+              }}
+            />
+          </div>
+        </Card>
+        <Card className="mt-3 p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Icon name="mail" size={16} className="text-aerial-cyan" /> Waitlist{" "}
+              <span className="font-normal text-white/45">({initialWaitlist.length})</span>
+            </div>
+            <SmallBtn onClick={() => downloadCsv(initialWaitlist)} disabled={!initialWaitlist.length}>
+              Export CSV
+            </SmallBtn>
+          </div>
+          {initialWaitlist.length ? (
+            <ul className="mt-4 max-h-64 divide-y divide-white/6 overflow-y-auto">
+              {initialWaitlist.map((w) => (
+                <li key={w.email} className="flex items-center justify-between py-2 text-sm">
+                  <span className="text-white/80">{w.email}</span>
+                  <span className="font-mono text-xs text-white/35">{w.joinedAt.slice(0, 10)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 text-xs text-white/45">No signups yet.</p>
+          )}
+        </Card>
+      </section>
 
       {/* ---------------------------------------------------------------- */}
       {/* Live server status                                                */}
@@ -320,6 +388,16 @@ function ControlButton({
       </div>
     </button>
   );
+}
+
+function downloadCsv(rows: WaitlistEntry[]) {
+  const csv = "email,joined_at\n" + rows.map((r) => `${r.email},${r.joinedAt}`).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "grid-waitlist.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function SmallBtn({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {

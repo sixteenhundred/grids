@@ -27,6 +27,9 @@ alter table public.lesson             enable row level security;
 alter table public.lesson_progress    enable row level security;
 alter table public.feature_flag       enable row level security;
 alter table public.waitlist           enable row level security;
+alter table public.app_config         enable row level security;
+alter table public.subscription       enable row level security;
+alter table public.usage              enable row level security;
 
 -- ---- user (mirror of auth.users): read own row only; writes via trigger ----
 grant select on public."user" to authenticated;
@@ -104,5 +107,9 @@ create policy progress_own on public.lesson_progress for all to authenticated
 -- ---- server-only tables (no API access) ----
 -- RLS enabled + no policies + no anon/authenticated grants → fully denied on the
 -- PostgREST surface. The server (Drizzle/postgres) bypasses RLS to read/write.
--- feature_flag: written by admin actions; waitlist: written by joinWaitlist action.
+--   feature_flag  — admin actions
+--   waitlist      — joinWaitlist action
+--   app_config    — config-store / admin (launch flag, CMS copy)
+--   subscription  — Stripe webhook (Phase 3) + entitlements reads
+--   usage         — quota service
 -- (Nothing to add — the revoke above already locks them to the API roles.)

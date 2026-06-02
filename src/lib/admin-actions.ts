@@ -12,10 +12,11 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { sql } from "drizzle-orm";
+import { sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { featureFlag } from "./db/schema";
+import { featureFlag, waitlist } from "./db/schema";
 import { getCurrentUser } from "./security/auth-guard";
+import { isPlatformLive, setPlatformLive } from "./config-store";
 import { isAdminEmail } from "./admin";
 import { FEATURE_DEFAULTS, FEATURE_KEYS } from "./features";
 import type {
@@ -229,5 +230,44 @@ export async function restartServer(): Promise<ServerActionResult> {
     ok: true,
     message: "Soft restart complete — caches cleared, instance re-initialised.",
     detail: { bootId: BOOT_ID },
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Waitlist + launch flag                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type WaitlistEntry = { email: string; joinedAt: string };
+
+/** All waitlist signups, newest first (admin only). */
+export async function listWaitlist(): Promise<WaitlistEntry[]> {
+  await requireAdmin();
+  try {
+    const rows = await db
+      .select({ email: waitlist.email, createdAt: waitlist.createdAt })
+      .from(waitlist)
+      .orderBy(desc(waitlist.createdAt));
+    return rows.map((r) => ({
+      email: r.email,
+      joinedAt: (r.createdAt instanceof Date ? r.createdAt : new Date(r.createdAt)).toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Current launch state (true = platform visible, false = waitlist-only). */
+export async function getPlatformLive(): Promise<boolean> {
+  return isPlatformLive();
+}
+
+/** Flip the launch switch (admin only). Editable live — no redeploy. */
+export async function setPlatformLiveFlag(live: boolean): Promise<ServerActionResult> {
+  await requireAdmin();
+  await setPlatformLive(live);
+  revalidatePath("/", "layout");
+  return {
+    ok: true,
+    message: live ? "Platform is LIVE." : "Platform hidden — public sees the waitlist only.",
   };
 }

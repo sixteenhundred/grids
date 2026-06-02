@@ -39,9 +39,15 @@ const serverEnvSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
-  // ---- Email (Resend — optional scaffold) ----
+  // ---- Email (Resend) ----
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  WAITLIST_NOTIFY_EMAIL: z.string().optional(),
+
+  // ---- Supabase ----
+  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
   // ---- Storage (S3 / Cloudflare R2 — optional scaffold) ----
   S3_REGION: z.string().optional(),

@@ -2,8 +2,10 @@ import {
   pgTable,
   text,
   integer,
+  bigint,
   boolean,
   timestamp,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -221,6 +223,56 @@ export const waitlist = pgTable("waitlist", {
     .notNull(),
 });
 
+/* -------------------------------------------------------------------------- */
+/*  Platform config (DB-backed CMS) + subscriptions + usage quotas             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Editable-without-redeploy config (CMS). One row per key; `value` is JSON.
+ * Holds launch flags (e.g. platform_live), editable copy, tier *display* text.
+ * MONEY (prices, charged amounts) stays in code/Stripe — never here.
+ */
+export const appConfig = pgTable("app_config", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  label: text("label"),
+  category: text("category"),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
+ * A user's subscription tier — the source of truth for entitlements. Written by
+ * the Stripe webhook (Phase 3) on checkout/renew/cancel; read by the server
+ * entitlements service. `plan` defaults to "free".
+ */
+export const subscription = pgTable("subscription", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  plan: text("plan").notNull().default("free"),
+  status: text("status").notNull().default("active"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/** Per-profile storage usage, enforced against the 50 GB / 5 GB-per-file caps. */
+export const usage = pgTable("usage", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  storageBytes: bigint("storage_bytes", { mode: "number" }).notNull().default(0),
+  fileCount: integer("file_count").notNull().default(0),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 export const schema = {
   user,
   featureFlag,
@@ -234,4 +286,7 @@ export const schema = {
   learningPath,
   lesson,
   lessonProgress,
+  appConfig,
+  subscription,
+  usage,
 };

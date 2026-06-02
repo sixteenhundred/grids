@@ -1,18 +1,38 @@
 "use server";
 
 /**
- * Waitlist signups → `waitlist` table (Supabase Postgres). If the DB is
- * unreachable it falls back to an in-memory set so the page still confirms for
- * the current instance. Email side-effects (confirmation + admin notice) are
- * wired in Phase 1.
+ * Waitlist signups → `waitlist` table (Supabase Postgres). After a new signup
+ * we fire two emails (non-blocking, best-effort): a confirmation to the signer
+ * and a notification to our inbox. Email no-ops cleanly until Resend keys are
+ * set, so the signup itself never fails on email.
  */
 
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { waitlist } from "./db/schema";
+import { getServerEnv } from "./env";
+import { sendEmail } from "./services/email.service";
+import { waitlistConfirmation, waitlistNotification } from "./email-templates";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const memEmails = new Set<string>();
+
+function notifyAddress(): string | null {
+  const env = getServerEnv();
+  if (env.WAITLIST_NOTIFY_EMAIL) return env.WAITLIST_NOTIFY_EMAIL;
+  const firstAdmin = env.ADMIN_EMAILS?.split(",")[0]?.trim();
+  return firstAdmin || null;
+}
+
+async function sendSignupEmails(email: string): Promise<void> {
+  const conf = waitlistConfirmation();
+  await sendEmail({ to: email, subject: conf.subject, html: conf.html }).catch(() => {});
+  const to = notifyAddress();
+  if (to) {
+    const note = waitlistNotification(email, new Date().toISOString());
+    await sendEmail({ to, subject: note.subject, html: note.html }).catch(() => {});
+  }
+}
 
 export async function joinWaitlist(
   rawEmail: string,
@@ -33,9 +53,9 @@ export async function joinWaitlist(
     }
     const id = `wl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     await db.insert(waitlist).values({ id, email }).onConflictDoNothing();
+    await sendSignupEmails(email); // best-effort; never blocks the signup
     return { ok: true, message: "You're on the list." };
   } catch {
-    // No database — confirm against the in-memory set for this instance.
     if (memEmails.has(email)) {
       return { ok: true, already: true, message: "You're already on the list." };
     }

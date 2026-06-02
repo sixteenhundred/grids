@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/security/auth-guard";
 import { isAdminEmail } from "@/lib/admin";
 import { getFlags } from "@/lib/admin-actions";
+import { isPlatformLive } from "@/lib/config-store";
 import { ThemeProvider } from "@/components/theme";
 import { RoleProvider } from "@/components/dashboard/role-context";
 import { SheetProvider } from "@/components/dashboard/sheet";
@@ -20,6 +22,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const current = await getCurrentUser();
   const user = current ?? { name: "Guest", email: "" };
   const isAdmin = isAdminEmail(current?.email);
+  // Launch gate: pre-launch the public sees only the waitlist. Admins always pass.
+  if (!isAdmin && !(await isPlatformLive())) redirect("/waitlist");
   const flags = await getFlags();
 
   return (
