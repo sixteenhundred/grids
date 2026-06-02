@@ -1,16 +1,20 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { schema } from "./schema";
 
 /**
- * libSQL works against three targets with identical code:
- *   - dev:  DATABASE_URL=file:./local.db
- *   - prod: DATABASE_URL=libsql://<db>.turso.io  (+ DATABASE_AUTH_TOKEN)
- *   - edge: a Cloudflare D1 binding (swap to drizzle-orm/d1 there)
+ * Supabase Postgres via postgres-js.
+ *   - DATABASE_URL = the Supabase connection string (pooler in prod/serverless,
+ *     direct for migrations). SSL is required by Supabase.
+ *   - `prepare: false` keeps us compatible with the transaction-mode pooler
+ *     (PgBouncer), which doesn't support prepared statements.
  */
-const client = createClient({
-  url: process.env.DATABASE_URL ?? "file:./local.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
+const connectionString = process.env.DATABASE_URL ?? "";
+
+const client = postgres(connectionString, {
+  ssl: "require",
+  prepare: false,
+  max: 5,
 });
 
 export const db = drizzle(client, { schema });

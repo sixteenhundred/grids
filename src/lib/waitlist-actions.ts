@@ -1,33 +1,18 @@
 "use server";
 
 /**
- * Waitlist email registry.
- *
- * Persists signups to the `waitlist` table (lazy `CREATE TABLE IF NOT EXISTS`,
- * so it works with no migration on local SQLite or Turso). When no database is
- * reachable it falls back to an in-memory set so the page still confirms.
+ * Waitlist signups → `waitlist` table (Supabase Postgres). If the DB is
+ * unreachable it falls back to an in-memory set so the page still confirms for
+ * the current instance. Email side-effects (confirmation + admin notice) are
+ * wired in Phase 1.
  */
 
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "./db";
+import { waitlist } from "./db/schema";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-let tableReady = false;
 const memEmails = new Set<string>();
-
-async function ensureTable(): Promise<void> {
-  if (tableReady) return;
-  await db.run(
-    sql`CREATE TABLE IF NOT EXISTS waitlist (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      city TEXT,
-      created_at INTEGER NOT NULL DEFAULT (unixepoch())
-    )`,
-  );
-  tableReady = true;
-}
 
 export async function joinWaitlist(
   rawEmail: string,
@@ -38,19 +23,16 @@ export async function joinWaitlist(
   }
 
   try {
-    await ensureTable();
-    const existing = await db.get<{ c: number }>(
-      sql`SELECT count(*) AS c FROM waitlist WHERE email = ${email}`,
-    );
-    if (existing && existing.c > 0) {
+    const existing = await db
+      .select({ id: waitlist.id })
+      .from(waitlist)
+      .where(eq(waitlist.email, email))
+      .limit(1);
+    if (existing.length > 0) {
       return { ok: true, already: true, message: "You're already on the list." };
     }
     const id = `wl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-    await db.run(
-      sql`INSERT INTO waitlist (id, email, created_at)
-          VALUES (${id}, ${email}, ${Math.floor(Date.now() / 1000)})
-          ON CONFLICT(email) DO NOTHING`,
-    );
+    await db.insert(waitlist).values({ id, email }).onConflictDoNothing();
     return { ok: true, message: "You're on the list." };
   } catch {
     // No database — confirm against the in-memory set for this instance.

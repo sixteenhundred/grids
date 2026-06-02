@@ -1,14 +1,11 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
-// Local dev uses a SQLite file; production uses Turso (libSQL) — set
-// DATABASE_URL=libsql://<db>.turso.io and DATABASE_AUTH_TOKEN=<token>.
-const url = process.env.DATABASE_URL ?? "file:./local.db";
-const authToken = process.env.DATABASE_AUTH_TOKEN;
-
+// Supabase Postgres. DATABASE_URL is the connection string (direct for
+// migrations, pooler for the serverless app). SSL is required.
 export default defineConfig({
-  dialect: url.startsWith("libsql") || url.startsWith("https") ? "turso" : "sqlite",
+  dialect: "postgresql",
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",
-  dbCredentials: authToken ? { url, authToken } : { url },
+  dbCredentials: { url: process.env.DATABASE_URL ?? "" },
 });

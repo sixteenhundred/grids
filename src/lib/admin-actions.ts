@@ -3,10 +3,9 @@
 /**
  * Admin server actions — feature flags + server maintenance.
  *
- * Flags persist in the `feature_flag` table so a toggle applies to EVERY
- * visitor of the deployment. When no database is reachable (e.g. the pure
- * demo with no Turso) we fall back to an in-memory map so the panel still
- * works for the current server instance.
+ * Flags persist in the `feature_flag` table (Supabase Postgres) so a toggle
+ * applies to EVERY visitor. When no database is reachable we fall back to an
+ * in-memory map so the panel still works for the current server instance.
  *
  * Only async functions are exported (a "use server" requirement). Shared
  * constants/types live in ./features and ./admin-types.
@@ -14,8 +13,9 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { sql } from "drizzle-orm";
+import { sql, lt } from "drizzle-orm";
 import { db } from "./db";
+import { featureFlag, session } from "./db/schema";
 import { auth } from "./auth";
 import { hasDemoSession } from "./demo-auth";
 import { DEMO_USER } from "./demo";
@@ -37,17 +37,16 @@ let BOOTED_AT = Date.now();
 
 /** Last-resort store when there is no writable database. */
 const memFlags: FlagMap = {};
-let flagTableReady = false;
 
 /* -------------------------------------------------------------------------- */
 /*  Auth                                                                       */
 /* -------------------------------------------------------------------------- */
 
 async function currentEmail(): Promise<string | null> {
-  const session = await auth.api
+  const sessionData = await auth.api
     .getSession({ headers: await headers() })
     .catch(() => null);
-  if (session?.user?.email) return session.user.email;
+  if (sessionData?.user?.email) return sessionData.user.email;
   if (await hasDemoSession()) return DEMO_USER.email;
   return null;
 }
@@ -62,18 +61,6 @@ async function requireAdmin(): Promise<string> {
 /*  Flag storage                                                               */
 /* -------------------------------------------------------------------------- */
 
-async function ensureFlagTable(): Promise<void> {
-  if (flagTableReady) return;
-  await db.run(
-    sql`CREATE TABLE IF NOT EXISTS feature_flag (
-      key TEXT PRIMARY KEY,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
-    )`,
-  );
-  flagTableReady = true;
-}
-
 /**
  * Current flag state for every feature: defaults overlaid with stored
  * overrides. Safe to call for any visitor (used by the dashboard layout).
@@ -81,10 +68,9 @@ async function ensureFlagTable(): Promise<void> {
 export async function getFlags(): Promise<FlagMap> {
   const flags: FlagMap = { ...FEATURE_DEFAULTS };
   try {
-    await ensureFlagTable();
-    const rows = await db.all<{ key: string; enabled: number }>(
-      sql`SELECT key, enabled FROM feature_flag`,
-    );
+    const rows = await db
+      .select({ key: featureFlag.key, enabled: featureFlag.enabled })
+      .from(featureFlag);
     for (const r of rows) {
       if (FEATURE_KEYS.has(r.key)) flags[r.key] = !!r.enabled;
     }
@@ -103,12 +89,13 @@ export async function setFlag(
   if (!FEATURE_KEYS.has(key)) return { ok: false, message: "Unknown feature." };
 
   try {
-    await ensureFlagTable();
-    await db.run(
-      sql`INSERT INTO feature_flag (key, enabled, updated_at)
-          VALUES (${key}, ${enabled ? 1 : 0}, ${Math.floor(Date.now() / 1000)})
-          ON CONFLICT(key) DO UPDATE SET enabled = excluded.enabled, updated_at = excluded.updated_at`,
-    );
+    await db
+      .insert(featureFlag)
+      .values({ key, enabled, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: featureFlag.key,
+        set: { enabled, updatedAt: new Date() },
+      });
   } catch {
     memFlags[key] = enabled;
   }
@@ -119,17 +106,18 @@ export async function setFlag(
 
 export async function setAllFlags(enabled: boolean): Promise<ServerActionResult> {
   await requireAdmin();
-  for (const key of FEATURE_KEYS) {
-    try {
-      await ensureFlagTable();
-      await db.run(
-        sql`INSERT INTO feature_flag (key, enabled, updated_at)
-            VALUES (${key}, ${enabled ? 1 : 0}, ${Math.floor(Date.now() / 1000)})
-            ON CONFLICT(key) DO UPDATE SET enabled = excluded.enabled, updated_at = excluded.updated_at`,
-      );
-    } catch {
-      memFlags[key] = enabled;
-    }
+  try {
+    const now = new Date();
+    const values = [...FEATURE_KEYS].map((key) => ({ key, enabled, updatedAt: now }));
+    await db
+      .insert(featureFlag)
+      .values(values)
+      .onConflictDoUpdate({
+        target: featureFlag.key,
+        set: { enabled, updatedAt: now },
+      });
+  } catch {
+    for (const key of FEATURE_KEYS) memFlags[key] = enabled;
   }
   revalidatePath("/dashboard", "layout");
   return {
@@ -141,8 +129,7 @@ export async function setAllFlags(enabled: boolean): Promise<ServerActionResult>
 export async function resetFlags(): Promise<ServerActionResult> {
   await requireAdmin();
   try {
-    await ensureFlagTable();
-    await db.run(sql`DELETE FROM feature_flag`);
+    await db.delete(featureFlag);
   } catch {
     for (const key of Object.keys(memFlags)) delete memFlags[key];
   }
@@ -157,7 +144,7 @@ export async function resetFlags(): Promise<ServerActionResult> {
 const ENV_VARS: { name: string; public: boolean }[] = [
   { name: "BETTER_AUTH_SECRET", public: false },
   { name: "DATABASE_URL", public: false },
-  { name: "DATABASE_AUTH_TOKEN", public: false },
+  { name: "SUPABASE_URL", public: false },
   { name: "NEXT_PUBLIC_APP_URL", public: true },
   { name: "DEMO_EMAIL", public: false },
   { name: "DEMO_PASSWORD", public: false },
@@ -177,18 +164,15 @@ const COUNT_TABLES = [
 async function probeDb(): Promise<DbStatus> {
   const url = process.env.DATABASE_URL ?? "";
   const configured = url.length > 0;
-  const driver = url.startsWith("libsql")
-    ? "Turso / libSQL"
-    : "SQLite (file)";
+  const driver = url.includes("supabase") ? "Supabase Postgres" : "Postgres";
   const tables: Record<string, number | null> = {};
   try {
-    await ensureFlagTable();
     for (const name of COUNT_TABLES) {
       try {
-        const row = await db.get<{ c: number }>(
-          sql.raw(`SELECT count(*) AS c FROM "${name}"`),
-        );
-        tables[name] = row?.c ?? 0;
+        const res = (await db.execute(
+          sql`select count(*)::int as c from ${sql.identifier(name)}`,
+        )) as unknown as Array<{ c: number }>;
+        tables[name] = res[0]?.c ?? 0;
       } catch {
         tables[name] = null; // table missing
       }
@@ -238,13 +222,11 @@ export async function cleanServer(): Promise<ServerActionResult> {
   await requireAdmin();
   let expiredSessionsRemoved = 0;
   try {
-    await db.run(
-      sql`DELETE FROM session WHERE expires_at < ${Math.floor(Date.now() / 1000)}`,
-    );
-    const row = await db.get<{ c: number }>(
-      sql`SELECT changes() AS c`,
-    );
-    expiredSessionsRemoved = row?.c ?? 0;
+    const removed = await db
+      .delete(session)
+      .where(lt(session.expiresAt, new Date()))
+      .returning({ id: session.id });
+    expiredSessionsRemoved = removed.length;
   } catch {
     // No DB — nothing to clean there.
   }
@@ -260,7 +242,6 @@ export async function restartServer(): Promise<ServerActionResult> {
   await requireAdmin();
   BOOT_ID = Math.random().toString(36).slice(2, 10);
   BOOTED_AT = Date.now();
-  flagTableReady = false; // re-verify schema on next access
   revalidatePath("/", "layout");
   return {
     ok: true,
