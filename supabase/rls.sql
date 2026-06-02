@@ -34,6 +34,8 @@ alter table public.contract           enable row level security;
 alter table public.contract_version   enable row level security;
 alter table public.review             enable row level security;
 alter table public.dispute            enable row level security;
+alter table public.portfolio_item     enable row level security;
+alter table public.creator_package    enable row level security;
 
 -- ---- user (mirror of auth.users): read own row only; writes via trigger ----
 grant select on public."user" to authenticated;
@@ -152,6 +154,18 @@ create policy dispute_party_read on public.dispute for select to authenticated
 drop policy if exists dispute_owner_write on public.dispute;
 create policy dispute_owner_write on public.dispute for all to authenticated
   using (opened_by_id = (auth.uid())::text) with check (opened_by_id = (auth.uid())::text);
+
+-- ---- portfolio_item / creator_package: owner-only on the API surface ----
+-- (Public marketplace exposure is mediated by server actions selecting only
+--  public fields; the raw PostgREST surface stays owner-scoped.)
+grant select, insert, update, delete on public.portfolio_item to authenticated;
+drop policy if exists portfolio_own on public.portfolio_item;
+create policy portfolio_own on public.portfolio_item for all to authenticated
+  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
+grant select, insert, update, delete on public.creator_package to authenticated;
+drop policy if exists cpackage_own on public.creator_package;
+create policy cpackage_own on public.creator_package for all to authenticated
+  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
 
 -- ---- server-only tables (no API access) ----
 -- RLS enabled + no policies + no anon/authenticated grants → fully denied on the

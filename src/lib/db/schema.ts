@@ -49,10 +49,56 @@ export const profile = pgTable("profile", {
   role: text("role").notNull().default("creative"),
   bio: text("bio"),
   location: text("location"),
+  // Marketplace display fields (creator profile). `displayName` overrides the
+  // auth name for the public card; `published` gates appearance in /browse.
+  displayName: text("display_name"),
+  specialty: text("specialty"),
+  // primary 'Photo'|'Video'|'Drone'|'Production'|'Editing'|'Crew'
+  cat: text("cat").notNull().default("Photo"),
+  // TalentCategory[] for browse filtering
+  categories: jsonb("categories").notNull().default([]),
+  // listed day-rate (creator-set listing price, like product.price; NOT a charge)
+  rate: integer("rate").notNull().default(0),
+  available: boolean("available").notNull().default(false),
+  verified: boolean("verified").notNull().default(false),
+  published: boolean("published").notNull().default(false),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
   updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/** A creator's portfolio image (bytes in private Storage; served via signed URL). */
+export const portfolioItem = pgTable("portfolio_item", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  imagePath: text("image_path").notNull(),
+  fileSize: integer("file_size").notNull().default(0),
+  title: text("title").notNull().default(""),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
+ * A creator's bookable package. `price` is the creator's own listed price (same
+ * category as product.price) — charge/escrow/payout LOGIC stays in Phase 3.
+ */
+export const creatorPackage = pgTable("creator_package", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull().default(""),
+  price: integer("price").notNull().default(0),
+  detail: text("detail").notNull().default(""),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),
 });
@@ -383,6 +429,8 @@ export const schema = {
   learningPath,
   lesson,
   lessonProgress,
+  portfolioItem,
+  creatorPackage,
   contract,
   contractVersion,
   review,

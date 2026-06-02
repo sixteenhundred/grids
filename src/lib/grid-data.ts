@@ -91,6 +91,9 @@ export type Creative = {
   bio: string;
   packages: Package[];
   portfolio: Tile[];
+  // Real uploaded portfolio images (signed URLs), index-aligned with `portfolio`.
+  // Absent on the static demo creatives; present on DB-backed profiles.
+  portfolioImages?: (string | null)[];
 };
 
 export const CREATIVES: Creative[] = [
