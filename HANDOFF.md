@@ -1,8 +1,9 @@
-# GRID — Session Handoff / Cloning Brief
+# GRID — Session Handoff / Clone Brief
 
-> Read this first when picking the project back up. Pair with `PROJECT_STATE.md`
-> (full architecture snapshot) and `AGENTS.md` (Next-16 warning).
-> Last updated: 2026-06-01.
+> **Read this first** to continue in a new conversation. It SUPERSEDES older
+> snapshots. The Turso→Supabase migration and the Better Auth→Supabase Auth
+> cutover are **DONE** — ignore any doc that still says libSQL/Turso or Better Auth.
+> Last updated: **2026-06-02**.
 
 ---
 
@@ -10,95 +11,96 @@
 
 | | |
 |---|---|
-| **Repo** | `/Users/johnhope/grids` · remote `github.com/sixteenhundred/grids` |
-| **Branch** | `feat/studio-shop-academy` (all session work pushed) |
-| **Run** | `cd /Users/johnhope/grids && npm run dev` → http://localhost:3000 (or the "Grid Dev Server" launch config, port 3000) |
-| **Build gate** | `./node_modules/.bin/tsc --noEmit` — **`next build` does NOT run eslint** |
-| **Login (demo = admin)** | `joingrid@demo.com` / `joingrid2026` — but **auth is non-blocking**, so you can also just open `/dashboard` or click "Continue as guest" |
-| **Stack** | Next.js **16.2.6** (App Router, Turbopack, React **19.2.4**), Tailwind **v4**, Drizzle + libSQL/Turso, Better Auth |
+| **Repo** | `/Users/johnhope/grids` |
+| **Branch** | `feat/studio-shop-academy` (all work committed; working tree clean) |
+| **Stack (current)** | Next.js **16.2.6** (App Router, Turbopack, React **19.2.4**), Tailwind **v4**, **Drizzle `pg-core` + Supabase Postgres**, **Supabase Auth** (`@supabase/ssr`), **Supabase Storage**. Host = **Vercel**. Email = Resend (optional). **Stripe = Phase 3, NOT started.** |
+| **Build gate** | `npx tsc --noEmit` **then** `npm run build` (both must be clean). |
+| **Secrets** | Live in `.env.local` (gitignored). Load for scripts: `set -a; source .env.local; set +a`. **Never commit them; never paste them into committed files.** |
+| **Supabase project** | URL `https://lrqtyjnicckglahtoqrq.supabase.co` (ref `lrqtyjnicckglahtoqrq`). Publishable/anon key is public; **service-role key + DB password are in `.env.local` only.** |
 
-⚠️ **This is NOT the Next.js you know** (v16). Check `node_modules/next/dist/docs/` before relying on training-data assumptions. Server dynamic-page `params` is a **Promise** (await it).
-
----
-
-## 1. Key routes
-
-- `/` landing · `/login` `/signup` (both have "Continue as guest") · `/terms`
-- `/dashboard` + all features · `/dashboard/admin` (Control Panel, admin-only)
-- `/dashboard/campaign` (AI marketing concepts) · `/dashboard/operation` (My Operation HQ)
-- `/waitlist` (pre-launch rainbow/liquid-glass page + email registry)
-- `/trust` + `/trust/[...slug]` (Trust Center — public)
-- **Cross-nav is wired**: waitlist ⇄ dashboard ⇄ trust (footer + sidebar links).
+⚠️ **This is NOT the Next.js you know (v16).** Read `node_modules/next/dist/docs/` before relying on memory. Middleware was renamed → **Proxy** (`src/proxy.ts`). Dynamic-route `params` is a **Promise** (await it). `after()` is imported from `next/server`. Instrumentation hook is `src/instrumentation.ts` `onRequestError`.
 
 ---
 
-## 2. What this session built (newest first)
+## 1. The 3 hard rules (NEVER violate — they came from the owner verbatim)
 
-1. **Equal-prominence cookie buttons** — Accept all / Reject all / Customize are now visually identical (Constitution Art. IV; no nudging).
-2. **Trust Center (`/trust`) + Cookie consent** — from the 13 GRID governance PDFs (see §4). Data-driven (`src/lib/trust.ts`: 10 categories, ~35 plain-language docs incl. the **published GRID Constitution**), search, dynamic doc/category pages, themed, honest `in-review` badges. Cookie banner (`src/components/cookie-consent.tsx`, mounted in root layout): equal-prominence choices, non-essential off by default, withdrawal via "Cookie settings", consent record stored.
-3. **Real profile photos** — `Avatar` renders a portrait per `id` via CSS `background-image` (Pravatar) with graceful gradient fallback; app-wide, no call-site changes.
-4. **Light-mode grey fix** — `.glass` utility was a hardcoded dark layer → tokenised; fixed crm/sales/operation/vault/builder in light mode.
-5. **Dark/light theme toggle** — `src/components/theme.tsx` (`ThemeProvider`, **session state, no localStorage**) → `[data-theme]` on `<html>`; glowing sun/moon toggle in topbar. Works because surface/text Tailwind tokens are `var(--c-*)` runtime vars (the `@theme inline` trick) with dark+light sets in `globals.css`. Contrast guaranteed: white↔black buttons invert (`text-grid-black`), accent labels pinned via `--color-on-accent`; AA verified both modes.
-6. **Demo mode (non-blocking auth)** — `dashboard/layout.tsx` never redirects (falls back to `DEMO_USER`); `guestLogin()` server action; auth UI preserved.
-7. **On-theme demo data** — John Hope (real-estate photographer) rethemed off car brands (Porsche/Meridian Auto → Penthouse/Meridian Estates) in `src/lib/operation.ts`.
-8. **Audit cleanup** — 7 unused imports + 1 unescaped entity fixed.
+1. **Money is sacred.** Never touch money logic, Stripe keys, payout logic, or pricing without stopping and asking first — show the diff and wait for an explicit yes.
+2. **The look is locked.** Never alter the visual design / UI. Backend + wiring only; if a backend change forces a visible change, ask first.
+3. **No fake data near prod.** No mock/placeholder/lorem/seeded/fake records in any environment that can reach production. Test data lives only in an isolated dev DB and is wiped before deploy. Also: **list files before deleting and wait for a yes.**
 
-Earlier in the broader session: **Admin Control Panel** (`/dashboard/admin` — feature toggles, server audit/clean/restart, live status, `feature_flag` table), **Campaign feature** (live web research via Claude+`web_search` when `ANTHROPIC_API_KEY` set, else deterministic fallback; `src/lib/campaign*.ts`), **Waitlist** (`waitlist` table registry), env-overridable demo creds.
+Operating pattern this session: build a slice → `tsc` + `build` → **headless-verify against the live DB and clean up the test rows** → commit (excluding `.env.local`) → update the roadmap.
 
 ---
 
-## 3. Open / next steps (priority order)
+## 2. Authoritative docs (read in this order)
 
-1. **Audit-log (DB) + Admin surface** — `audit_logs` table + logging service, shown in the Admin Control Panel (EPIC 4 / PRD 4). *Implementable in this stack — recommended next.*
-2. **User Rights / "My Data" page** — export / delete / consent history / sessions (EPIC 3 / PRD 3). *Implementable here.*
-3. **Demo enrichment (task #4, deferred)** — profile **banners** + **shop/academy** content. Note: shops/academies are **per-user DB records**; for a showcase, prefer a **static demo fallback** (renders rich default content with no DB) over seeding Turso. Profile *photos* are already done.
-4. **Cookie "in-review" label decision** — keep / reword / draft fuller policy text (user asked about this; awaiting preference).
-5. **Governance backend (large, phased)** — see §4.
+1. `HANDOFF.md` (this file) — entry point.
+2. `FEATURE_ROADMAP.md` — phase-by-phase status (the source of truth for what's done).
+3. `SETUP.md` — accounts/runbook · `SYSTEM_INDEX.md` — current-state map.
+4. `POLICY_CONSTRAINTS.md` — what our own policy forbids (the "cannot do" list + the Terms §9 vs Privacy contradiction).
+5. `SECURITY_AUDIT.md` — security posture + remaining vulns.
+6. `SCALE.md` — caching / async / indexes / horizontal scaling / monitoring.
+7. `AGENTS.md` — the Next-16 warning.
 
----
-
-## 4. The 13 GRID governance documents
-
-Source PDFs: `/Users/johnhope/Downloads/GRID *.pdf`. Extracted text cached at `/tmp/gridtxt/*.txt` (regenerate with `pypdf` if gone — `/tmp` is ephemeral).
-
-Docs: Constitution · Operating System · Master Control Matrix · Security Bible · Payment Manual · Implementation Package (the master spec) · Decision Archive Framework · Enterprise Risk Register · Evidence Architecture Spec · Future Scenarios · Global Governance Directive · Hostile Legal Review Checklist · Regulator Playbook.
-
-**Implemented:** Trust Center (Part 4 / PRD 1), Cookie consent (PRD 2 / EPIC 2), Constitution published, honest disclosure layer.
-
-**NOT implemented (documented phased backend program):** Postgres/Supabase **RLS** + the 20-table schema, 13-role **RBAC**, **escrow/ledger/production-wallet** money movement, **KYC/AML**, **MFA**, **moderation** engine, `audit_logs`/`consent_records` DB tables. **Reality check:** the app runs on **libSQL/Drizzle (not Postgres/Supabase)** — the spec's RLS/schema is a backend migration, not a feature edit. Honor the Implementation Package's **Final Rule** (answer data/access/policy/audit/disclosure/risk/control/failure before building).
+> `PROJECT_STATE.md` / `NOTES.md` and the *history* of this file predate the Supabase migration — trust the roadmap + this file where they conflict.
 
 ---
 
-## 5. Conventions & gotchas — do not break these
+## 3. Status by phase
 
-- **Hydration:** never read `localStorage` in `useState` initializers — hydrate in `useEffect`. The ~13 `react-hooks/set-state-in-effect` lint "errors" are this **intentional** pattern, **not bugs**. (Also `react-hooks/purity` on a `Date.now()` handler + a disabled `exhaustive-deps` are intentional.)
-- **Theming:** surface/text Tailwind tokens resolve to `var(--c-*)` (themeable). In **arbitrary** `bg-[...]` gradients reference `--c-*` (or `--color-*`, which IS emitted to `:root`). Accent-button **labels** use `text-on-accent` (non-flipping light); body text uses `text-white` (flips). `--color-grid-black`/`text-grid-black` flip with theme.
-- **`"use server"` files:** only async exports.
-- **Build:** `tsc` gates the build; eslint does not.
-- **Waitlist:** pure CSS now (Three.js/WebGL was removed — it was context-loss-prone; `three`/`@react-three/*` uninstalled).
-- **Dashboard routes:** `export const maxDuration = 60` (Campaign web research can run 20–40s on Vercel).
-- **Don't commit secrets**; `.env.local`, `local.db` are gitignored.
+- **Phase 0 — Supabase foundation ✓** DB on Supabase Postgres (Drizzle pg-core, `postgres-js`, `prepare:false` for the pooler); Supabase Auth with a **mirror trigger** (`public.user` mirrors `auth.users`; guest = anonymous sign-in); **RLS on all 23 tables**, isolation proven (`scripts/test-rls.mjs` + per-table tests).
+- **Phase 1 — Waitlist + launch gate ✓** `/waitlist` + Resend confirmation/notify emails (CAN-SPAM footer + unsubscribe), admin Launch section, **`PLATFORM_LIVE`** server gate (DB-flippable; platform redirects to `/waitlist` when off, admins pass).
+- **Phase 2 — Platform persistence + gating ✓** server entitlements (+ enforcement on creator write paths), DB CMS (`config-store`), **quotas** (50 GB/profile, 5 GB/file, atomic), **Supabase Storage** (private `uploads` bucket, owner-scoped), **product-file upload + purchase-gated download**, **DB-backed creator marketplace** (profile + portfolio uploads + packages + reviews; browse/detail/home/radar/profile all read DB; no fake creatives in the marketplace), **data-rights** (export/delete/consent + append-only audit), security hardening (rate limits, input caps, secret hygiene), DMCA agent, scale infra (cache, async via `after()`, 25 indexes, monitoring, k6).
+- **Phase 3 — Payments (Stripe) — NOT STARTED.** Gated on Rule 1 + a Stripe account + money decisions (fees/prices/escrow windows). Plan: Connect **separate charges & transfers** ("Grid Escrow" = held on platform balance, ≤90-day guard, `charge.dispute.created` → reverse transfer), Checkout/Billing subscriptions, signature-verified webhook, payment tables, all against **test mode**. **Subscription/FTC compliance** (auto-renewal disclosure at checkout, easy cancellation, free-trial reminder) belongs here. Apple/Google IAP = N/A for web. Document in `PAYMENTS.md`.
+- **Phase 4 — Audit + cleanup + docs — pending.** Real tests for every critical flow, money path vs Stripe test mode, dead-code/dep prune (deletes pre-approved but list them), finish PAYMENTS/CHANGELOG.
 
 ---
 
-## 6. Environment variables (Vercel)
+## 4. Data model (23 tables) + the RLS rule
 
-`BETTER_AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`, `DATABASE_URL` (+ `DATABASE_AUTH_TOKEN` for Turso), `DEMO_EMAIL`/`DEMO_PASSWORD`/`DEMO_NAME`, `ADMIN_EMAILS` (comma-sep), `ANTHROPIC_API_KEY` (enables live Campaign research; falls back to deterministic if unset). See `.env.example` + `DEPLOY.md`.
+`src/lib/db/schema.ts`. Tables: `user`(mirror), `profile`, `shop`, `product`, `purchase`, `academy`, `academy_enrollment`, `learning_path`, `lesson`, `lesson_progress`, `feature_flag`, `waitlist`, `app_config`, `subscription`, `usage`, `contract`, `contract_version`, `review`, `dispute`, `portfolio_item`, `creator_package`, `audit_event`(append-only), `consent`.
+
+**RLS architecture (important):** the app reads/writes via Drizzle as the `postgres` role, which **BYPASSES RLS** — server authz is enforced in code (`requireUser()` + `where user_id = uid`). The RLS policies in `supabase/rls.sql` lock the **publishable-key/PostgREST surface** (browser). `user_id` columns are **TEXT holding the auth uid**; policies compare to `(auth.uid())::text`. Money columns are deliberately **absent** from `contract`/etc. (Phase 3 owns money). `DEMO_MODE` (`src/lib/client/config.ts`, currently `true`) short-circuits entitlement gates and enables seed/demo data; flipping it off is a launch step.
 
 ---
 
-## 7. New/changed files this session (orientation map)
+## 5. Verification & infra commands (env from `.env.local`)
 
-- `src/app/globals.css` — theme token system (`--c-*` dark/light sets, `.glass` tokens)
-- `src/components/theme.tsx` — ThemeProvider + glowing toggle
-- `src/components/cookie-consent.tsx` — consent banner + `CookieSettingsButton`
-- `src/lib/trust.ts` + `src/app/trust/{layout,page,[...slug]/page,trust-search}.tsx` — Trust Center
-- `src/app/dashboard/layout.tsx` — non-blocking auth + ThemeProvider
-- `src/lib/demo-auth.ts` — `guestLogin()`
-- `src/components/dashboard/{shell,ui,role-context,sheets}.tsx` — theme/contrast + nav links + Avatar photos
-- `src/app/(auth)/{login,signup}/page.tsx` — "Continue as guest"
-- `src/app/waitlist/page.tsx` — "Enter platform" link
-- `src/components/landing/final-cta.tsx` — footer → Trust Center
-- `src/lib/operation.ts` — on-theme demo data
+```bash
+# Always: type + build
+npx tsc --noEmit && npm run build
 
-`tsc` clean. Working tree clean. Branch pushed.
+# Push schema changes (direct conn string; --force)
+DATABASE_URL="$DATABASE_URL" npx drizzle-kit push --force
+
+# RLS: edit supabase/rls.sql then
+DATABASE_URL="$DATABASE_URL" node scripts/apply-rls.mjs
+node scripts/test-rls.mjs            # isolation test (expects all PASS)
+
+# Storage bucket/policy
+node scripts/setup-storage.mjs
+
+# Headless DB/storage checks: node --input-type=module -e "...".
+#   Use createClient(SUPA_URL, SERVICE_ROLE) + postgres(DATABASE_URL,{ssl:'require'}).
+#   ALWAYS delete any rows/users/objects you created (Rule 3).
+```
+
+The `.env.local` keys you'll need: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL` (direct conn for scripts; **IPv4 pooler** string is needed for Vercel deploy).
+
+---
+
+## 6. Open items / what still needs the owner
+
+**Code still to do (not started):**
+- Secondary demo surfaces still resolving creatives via `findCreative` (community feed, saved, concierge) + the client company profile (`MY_COMPANY`) are still mock — must be DB-backed or demo-gated before going live.
+- Remove the "Continue as guest" button + flip `DEMO_MODE=false` at launch.
+- Phase 3 (Stripe) and Phase 4 (audit) per §3.
+
+**Needs the owner (external/decisions):**
+- Resend API key (live email); **IPv4 pooler** connection string (deploy); 2 Supabase toggles (**Anonymous sign-ins ON**, **Confirm email OFF**); `COMPANY_POSTAL_ADDRESS` (CAN-SPAM); Supabase Auth dashboard rate-limit; **Upstash** creds (global cache + rate limits); **Sentry** DSN + `npm i @sentry/nextjs` (error alerts); **counsel** sign-off on the Terms §9 redraft (`legal-terms.ts`, marked DRAFT); Phase-3 money decisions (fees/prices/escrow windows); decision on the still-mocked surfaces above.
+
+---
+
+## 7. Git
+
+Branch `feat/studio-shop-academy`. Recent commits (newest first): scale infra → DB indexes → data-rights (export/delete/consent) → policy flip + Terms §9 → compliance/security (rate limits, CAN-SPAM, DMCA, audit) → marketplace de-mock (profile editor → read pages → backend) → product-file upload → non-money domain tables + seed gating → entitlement enforcement → Supabase Storage. Working tree clean.
