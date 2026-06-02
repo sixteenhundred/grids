@@ -43,6 +43,8 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   WAITLIST_NOTIFY_EMAIL: z.string().optional(),
+  // CAN-SPAM requires a valid physical postal address in commercial email.
+  COMPANY_POSTAL_ADDRESS: z.string().optional(),
 
   // ---- Supabase ----
   NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),

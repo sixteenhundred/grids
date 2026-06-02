@@ -361,6 +361,10 @@ export const waitlist = pgTable("waitlist", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   city: text("city"),
+  // CAN-SPAM: opaque per-signup token powers a no-login unsubscribe link
+  // (no email in the URL). `unsubscribedAt` is the suppression flag.
+  unsubscribeToken: text("unsubscribe_token"),
+  unsubscribedAt: timestamp("unsubscribed_at"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),

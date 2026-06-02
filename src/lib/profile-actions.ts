@@ -27,7 +27,12 @@ import {
   removeObject,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
+import { rateLimit } from "./security/rate-limit";
 import type { Creative, Review, Tile, Category } from "./grid-data";
+
+// Input size caps (defence against oversized/abusive payloads).
+const CAP = { name: 80, specialty: 80, city: 80, bio: 4000, pkgName: 80, pkgDetail: 300, review: 4000, fileName: 300 } as const;
+const cap = (s: string, n: number) => s.slice(0, n);
 
 type ProfileRow = typeof profile.$inferSelect;
 
@@ -209,11 +214,11 @@ export async function saveMyProfile(input: {
   await db
     .update(profile)
     .set({
-      displayName: input.name.trim() || u.name,
-      specialty: input.specialty.trim(),
-      location: input.city.trim(),
+      displayName: cap(input.name.trim(), CAP.name) || u.name,
+      specialty: cap(input.specialty.trim(), CAP.specialty),
+      location: cap(input.city.trim(), CAP.city),
       rate: Math.max(0, Math.round(input.rate)),
-      bio: input.bio.trim(),
+      bio: cap(input.bio.trim(), CAP.bio),
       ...(input.cat ? { cat: input.cat } : {}),
       ...(input.categories ? { categories: input.categories } : {}),
       ...(input.available != null ? { available: input.available } : {}),
@@ -232,11 +237,15 @@ export async function createPortfolioUploadUrl(
   size: number,
 ): Promise<{ path: string; token: string }> {
   const u = await requireUser();
+  if (!rateLimit(`upload:${u.id}`, { limit: 60, windowMs: 15 * 60_000 }).ok) {
+    throw new Error("Too many uploads. Please wait a few minutes.");
+  }
+  if (name.length > CAP.fileName) throw new Error("File name is too long.");
   const sized = checkFileSize(size);
   if (!sized.ok) throw new Error(sized.reason);
   const { storageBytes } = await getUsage(u.id);
   if (storageBytes + size > MAX_STORAGE_BYTES) throw new Error("Storage limit reached (50 GB).");
-  const res = await createSignedUploadUrl({ userId: u.id, category: "portfolio", name, bytes: size });
+  const res = await createSignedUploadUrl({ userId: u.id, category: "portfolio", name: cap(name, CAP.fileName), bytes: size });
   if (!res.ok) throw new Error(res.error);
   return { path: res.data.path, token: res.data.token };
 }
@@ -304,9 +313,9 @@ export async function savePackages(
     list.slice(0, 12).map((p, i) => ({
       id: genId("pk"),
       userId: u.id,
-      name: p.name.trim(),
+      name: cap(p.name.trim(), CAP.pkgName),
       price: Math.max(0, Math.round(p.price)),
-      detail: p.detail.trim(),
+      detail: cap(p.detail.trim(), CAP.pkgDetail),
       position: i,
       createdAt: new Date(),
     })),
@@ -330,13 +339,16 @@ async function listReviews(subjectUserId: string): Promise<Review[]> {
 export async function addReview(subjectId: string, rating: number, body: string): Promise<void> {
   const u = await requireUser();
   if (subjectId === u.id) throw new Error("You can't review your own profile.");
+  if (!rateLimit(`review:${u.id}`, { limit: 10, windowMs: 60 * 60_000 }).ok) {
+    throw new Error("Too many reviews. Please slow down.");
+  }
   await db.insert(review).values({
     id: genId("rv"),
     subjectId,
     subjectType: "creative",
     authorId: u.id,
     rating: Math.min(5, Math.max(1, Math.round(rating))),
-    body: body.trim(),
+    body: cap(body.trim(), CAP.review),
     createdAt: new Date(),
   });
 }

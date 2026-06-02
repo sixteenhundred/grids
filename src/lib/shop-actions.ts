@@ -24,6 +24,7 @@ import {
   removeObject,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
+import { rateLimit } from "./security/rate-limit";
 import {
   DEFAULT_CONFIG,
   SEED_PRODUCTS,
@@ -205,11 +206,15 @@ export async function createProductUploadUrl(
   size: number,
 ): Promise<{ path: string; token: string }> {
   const u = await requireShopOwner();
+  if (!rateLimit(`upload:${u.id}`, { limit: 60, windowMs: 15 * 60_000 }).ok) {
+    throw new Error("Too many uploads. Please wait a few minutes.");
+  }
+  if (name.length > 300) throw new Error("File name is too long.");
   const sized = checkFileSize(size);
   if (!sized.ok) throw new Error(sized.reason);
   const { storageBytes } = await getUsage(u.id);
   if (storageBytes + size > MAX_STORAGE_BYTES) throw new Error("Storage limit reached (50 GB).");
-  const res = await createSignedUploadUrl({ userId: u.id, category: "products", name, bytes: size });
+  const res = await createSignedUploadUrl({ userId: u.id, category: "products", name: name.slice(0, 300), bytes: size });
   if (!res.ok) throw new Error(res.error);
   return { path: res.data.path, token: res.data.token };
 }
