@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   Surface,
@@ -18,13 +19,29 @@ import { ReviewCard, PackageRow } from "@/components/dashboard/cards";
 import { useSheet } from "@/components/dashboard/sheet";
 import { useRole } from "@/components/dashboard/role-context";
 import { BookingFlow, MessageSheet } from "@/components/dashboard/sheets";
-import { findCreative, money, CREATIVE_REVIEWS } from "@/lib/grid-data";
+import { money, type Creative, type Review } from "@/lib/grid-data";
+import { getCreator, getCreatorReviews } from "@/lib/profile-actions";
 
 export default function CreativeProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { open } = useSheet();
   const { role } = useRole();
-  const c = findCreative(id);
+  const [c, setC] = useState<Creative | null | undefined>(undefined);
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    getCreator(id).then(setC).catch(() => setC(null));
+    getCreatorReviews(id).then(setReviews).catch(() => setReviews([]));
+  }, [id]);
+
+  if (c === undefined) {
+    return (
+      <div className="rise flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm text-white/45">Loading profile…</p>
+      </div>
+    );
+  }
 
   if (!c) {
     return (
@@ -45,7 +62,7 @@ export default function CreativeProfilePage() {
   }
 
   const firstName = c.name.split(" ")[0];
-  const reviews = CREATIVE_REVIEWS[c.id];
+  const hasPackages = c.packages.length > 0;
   const book = (pkgIndex = 0) =>
     open(<BookingFlow creative={c} pkg={c.packages[pkgIndex]} />);
   const message = () =>
@@ -59,6 +76,7 @@ export default function CreativeProfilePage() {
         <Surface radius="2rem" inner="overflow-hidden">
           <MediaTile
             tile={c.portfolio[0]}
+            image={c.portfolioImages?.[0] ?? undefined}
             ratio="16 / 9"
             rounded="rounded-[calc(2rem-0.375rem)] rounded-b-none"
             label={c.portfolio[0].title}
@@ -102,7 +120,7 @@ export default function CreativeProfilePage() {
             </p>
 
             <div className="flex flex-wrap gap-2.5">
-              {isClient && (
+              {isClient && hasPackages && (
                 <Button tone="green" arrow onClick={() => book(0)}>
                   Book {firstName}
                 </Button>
@@ -118,22 +136,30 @@ export default function CreativeProfilePage() {
       {/* Portfolio */}
       <section className="rise" style={{ animationDelay: "60ms" }}>
         <SectionHeader title="Portfolio" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {c.portfolio.map((t, i) => (
-            <MediaTile key={`${t.title}-${i}`} tile={t} ratio="1 / 1" label={t.title} />
-          ))}
-        </div>
+        {c.portfolioImages && c.portfolioImages.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {c.portfolio.map((t, i) => (
+              <MediaTile key={`${t.title}-${i}`} tile={t} image={c.portfolioImages?.[i] ?? undefined} ratio="1 / 1" label={t.title} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center text-sm text-white/55">
+            No portfolio work shared yet.
+          </div>
+        )}
       </section>
 
       {/* Packages */}
-      <section className="rise" style={{ animationDelay: "120ms" }}>
-        <SectionHeader title="Packages" />
-        <div className="flex flex-col gap-3">
-          {c.packages.map((p, i) => (
-            <PackageRow key={p.name} pkg={p} onBook={isClient ? () => book(i) : undefined} />
-          ))}
-        </div>
-      </section>
+      {hasPackages && (
+        <section className="rise" style={{ animationDelay: "120ms" }}>
+          <SectionHeader title="Packages" />
+          <div className="flex flex-col gap-3">
+            {c.packages.map((p, i) => (
+              <PackageRow key={p.name} pkg={p} onBook={isClient ? () => book(i) : undefined} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Reviews */}
       {reviews && reviews.length > 0 && (
@@ -163,7 +189,7 @@ export default function CreativeProfilePage() {
               </div>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-2.5 sm:w-auto">
-              {isClient && (
+              {isClient && hasPackages && (
                 <Button tone="green" arrow full onClick={() => book(0)}>
                   Book {firstName}
                 </Button>

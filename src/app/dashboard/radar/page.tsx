@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PageHeader, SectionHeader, Surface, Card, Avatar, Icon } from "@/components/dashboard/ui";
 import { JobRow } from "@/components/dashboard/cards";
 import { useSheet } from "@/components/dashboard/sheet";
 import { ApplyJobSheet, QuickProfileSheet } from "@/components/dashboard/sheets";
-import { CREATIVES, JOBS } from "@/lib/grid-data";
+import { JOBS, type Creative } from "@/lib/grid-data";
+import { listCreators } from "@/lib/profile-actions";
 
 /* Decorative radar pings — positioned over the rings. */
 const PINGS = [
@@ -17,7 +19,11 @@ const PINGS = [
 export default function RadarPage() {
   const { open } = useSheet();
   const urgent = JOBS.filter((j) => j.urgent);
-  const nearby = CREATIVES.slice(0, 4);
+  const [nearby, setNearby] = useState<Creative[]>([]);
+
+  useEffect(() => {
+    listCreators().then((list) => setNearby(list.slice(0, 4))).catch(() => setNearby([]));
+  }, []);
 
   return (
     <div className="flex flex-col gap-10">
@@ -74,22 +80,28 @@ export default function RadarPage() {
       {/* Creatives nearby */}
       <div className="rise" style={{ animationDelay: "120ms" }}>
         <SectionHeader title="Creatives nearby" />
-        <div className="flex flex-col gap-3">
-          {nearby.map((c) => (
-            <Card key={c.id} hover className="p-0">
-              <button type="button" onClick={() => open(<QuickProfileSheet creative={c} />)} className="flex w-full items-center gap-4 rounded-[inherit] p-4 text-left">
-                <Avatar id={c.id} name={c.name} size={44} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-white">{c.name}</div>
-                  <div className="truncate text-sm text-white/55">{c.city} · {c.distanceKm} km</div>
-                </div>
-                <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-aerial-cyan">
-                  View <Icon name="chevron" size={14} />
-                </span>
-              </button>
-            </Card>
-          ))}
-        </div>
+        {nearby.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {nearby.map((c) => (
+              <Card key={c.id} hover className="p-0">
+                <button type="button" onClick={() => open(<QuickProfileSheet creative={c} />)} className="flex w-full items-center gap-4 rounded-[inherit] p-4 text-left">
+                  <Avatar id={c.id} name={c.name} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-white">{c.name}</div>
+                    <div className="truncate text-sm text-white/55">{c.city}{c.distanceKm ? ` · ${c.distanceKm} km` : ""}</div>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-aerial-cyan">
+                    View <Icon name="chevron" size={14} />
+                  </span>
+                </button>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm text-white/55">
+            No creatives nearby yet.
+          </div>
+        )}
       </div>
     </div>
   );

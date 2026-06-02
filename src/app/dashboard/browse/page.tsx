@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRole } from "@/components/dashboard/role-context";
 import { PageHeader, Icon } from "@/components/dashboard/ui";
 import { CreativeCard } from "@/components/dashboard/cards";
-import { CREATIVES, TALENT_CATEGORIES, type Category, type TalentCategory } from "@/lib/grid-data";
+import { TALENT_CATEGORIES, type Category, type TalentCategory, type Creative } from "@/lib/grid-data";
+import { listCreators } from "@/lib/profile-actions";
 
 type Filter = "All" | "Photo" | "Video" | "Drone";
 
@@ -108,10 +109,15 @@ export default function BrowsePage() {
   const [category, setCategory] = useState<Filter>("All");
   const [cats, setCats] = useState<TalentCategory[]>([]);
   const [maxBudget, setMaxBudget] = useState(BUDGET_MAX);
+  const [creatives, setCreatives] = useState<Creative[]>([]);
+
+  useEffect(() => {
+    listCreators().then(setCreatives).catch(() => setCreatives([]));
+  }, []);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return CREATIVES.filter((c) => {
+    return creatives.filter((c) => {
       const matchesCat = category === "All" || c.cat === (category as Category);
       const matchesCats = cats.length === 0 || c.categories.some((cc) => cats.includes(cc));
       const matchesBudget = c.rate <= maxBudget;
@@ -123,7 +129,7 @@ export default function BrowsePage() {
         c.categories.some((cc) => cc.toLowerCase().includes(q));
       return matchesCat && matchesCats && matchesBudget && matchesQuery;
     });
-  }, [query, category, cats, maxBudget]);
+  }, [creatives, query, category, cats, maxBudget]);
 
   const sliderAccent = role === "client" ? "accent-client-green" : "accent-grid-blue";
 
@@ -214,7 +220,9 @@ export default function BrowsePage() {
           </div>
         ) : (
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center text-sm text-white/55">
-            No creatives match your search. Try a different filter or term.
+            {creatives.length === 0
+              ? "No creatives yet. Verified talent will appear here as they join."
+              : "No creatives match your search. Try a different filter or term."}
           </div>
         )}
       </div>

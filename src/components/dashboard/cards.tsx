@@ -41,7 +41,7 @@ export function CreativeCard({ c }: { c: Creative }) {
   return (
     <Card hover className="overflow-hidden">
       <Link href={`/dashboard/creative/${c.id}`} className="block">
-        <MediaTile tile={c.portfolio[0]} ratio="16 / 10" rounded="rounded-t-3xl">
+        <MediaTile tile={c.portfolio[0]} image={c.portfolioImages?.[0] ?? undefined} ratio="16 / 10" rounded="rounded-t-3xl">
           {c.available && (
             <span className="absolute left-3 top-3">
               <StatusPill tone="escrow" live>
@@ -77,7 +77,7 @@ export function FeaturedCreativeCard({ c }: { c: Creative }) {
   return (
     <button onClick={() => open(<QuickProfileSheet creative={c} />)} className="group block w-56 shrink-0 text-left">
       <Card hover className="h-full overflow-hidden">
-        <MediaTile tile={c.portfolio[0]} ratio="4 / 3" rounded="rounded-t-3xl" />
+        <MediaTile tile={c.portfolio[0]} image={c.portfolioImages?.[0] ?? undefined} ratio="4 / 3" rounded="rounded-t-3xl" />
         <div className="p-4">
           <div className="flex items-center gap-1.5">
             <span className="truncate font-semibold text-white">{c.name}</span>

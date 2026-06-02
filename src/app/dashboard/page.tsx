@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import { useRole } from "@/components/dashboard/role-context";
@@ -7,13 +8,19 @@ import { useSheet } from "@/components/dashboard/sheet";
 import { UploadSheet, PostJobSheet } from "@/components/dashboard/sheets";
 import { MetricCard, SectionHeader, Button, IconTile, Surface, Icon } from "@/components/dashboard/ui";
 import { FeaturedCreativeCard, JobRow, PostCard, ProjectCard } from "@/components/dashboard/cards";
-import { CREATIVES, JOBS, POSTS, PROJECTS, METRICS, money } from "@/lib/grid-data";
+import { JOBS, POSTS, PROJECTS, METRICS, money, type Creative } from "@/lib/grid-data";
+import { listCreators } from "@/lib/profile-actions";
 
 export default function DashboardHome() {
   const { role } = useRole();
   const { open } = useSheet();
   const { data } = useSession();
   const first = data?.user?.name?.split(" ")[0] ?? (role === "client" ? "there" : "creator");
+  const [featured, setFeatured] = useState<Creative[]>([]);
+
+  useEffect(() => {
+    listCreators().then((list) => setFeatured(list.slice(0, 8))).catch(() => setFeatured([]));
+  }, []);
 
   return (
     <div className="flex flex-col gap-10">
@@ -72,14 +79,16 @@ export default function DashboardHome() {
       </section>
 
       {/* Featured creatives */}
-      <section className="rise" style={{ animationDelay: "120ms" }}>
-        <SectionHeader title="Featured creators" href="/dashboard/browse" />
-        <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 no-scrollbar">
-          {CREATIVES.map((c) => (
-            <FeaturedCreativeCard key={c.id} c={c} />
-          ))}
-        </div>
-      </section>
+      {featured.length > 0 && (
+        <section className="rise" style={{ animationDelay: "120ms" }}>
+          <SectionHeader title="Featured creators" href="/dashboard/browse" />
+          <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 no-scrollbar">
+            {featured.map((c) => (
+              <FeaturedCreativeCard key={c.id} c={c} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Role-specific blocks */}
       {role === "client" ? (

@@ -652,7 +652,7 @@ export function QuickProfileSheet({ creative }: { creative: Creative }) {
       <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-white/65">{creative.bio}</p>
 
       <div className="mt-6 flex flex-col gap-2.5">
-        {role === "client" && (
+        {role === "client" && creative.packages.length > 0 && (
           <Button full tone="green" arrow onClick={() => open(<BookingFlow creative={creative} pkg={creative.packages[0]} />)}>
             Book {first}
           </Button>
