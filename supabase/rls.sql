@@ -30,6 +30,10 @@ alter table public.waitlist           enable row level security;
 alter table public.app_config         enable row level security;
 alter table public.subscription       enable row level security;
 alter table public.usage              enable row level security;
+alter table public.contract           enable row level security;
+alter table public.contract_version   enable row level security;
+alter table public.review             enable row level security;
+alter table public.dispute            enable row level security;
 
 -- ---- user (mirror of auth.users): read own row only; writes via trigger ----
 grant select on public."user" to authenticated;
@@ -103,6 +107,51 @@ grant select, insert, update, delete on public.lesson_progress to authenticated;
 drop policy if exists progress_own on public.lesson_progress;
 create policy progress_own on public.lesson_progress for all to authenticated
   using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
+
+-- ---- contracts / versions / reviews / disputes ----
+-- contract: readable by either party; writable by the creator.
+grant select, insert, update, delete on public.contract to authenticated;
+drop policy if exists contract_party_read on public.contract;
+create policy contract_party_read on public.contract for select to authenticated
+  using (creator_id = (auth.uid())::text or client_id = (auth.uid())::text);
+drop policy if exists contract_owner_write on public.contract;
+create policy contract_owner_write on public.contract for all to authenticated
+  using (creator_id = (auth.uid())::text) with check (creator_id = (auth.uid())::text);
+
+-- contract_version: append-only history, readable by either party of the parent.
+grant select, insert on public.contract_version to authenticated;
+drop policy if exists cversion_party_read on public.contract_version;
+create policy cversion_party_read on public.contract_version for select to authenticated
+  using (exists (select 1 from public.contract c
+                 where c.id = contract_version.contract_id
+                   and (c.creator_id = (auth.uid())::text or c.client_id = (auth.uid())::text)));
+drop policy if exists cversion_insert on public.contract_version;
+create policy cversion_insert on public.contract_version for insert to authenticated
+  with check (editor_id = (auth.uid())::text
+              and exists (select 1 from public.contract c
+                          where c.id = contract_version.contract_id
+                            and (c.creator_id = (auth.uid())::text or c.client_id = (auth.uid())::text)));
+
+-- review: PUBLIC read (shown on profiles), author-only write.
+grant select on public.review to anon, authenticated;
+grant insert, update, delete on public.review to authenticated;
+drop policy if exists review_read on public.review;
+create policy review_read on public.review for select using (true);
+drop policy if exists review_write on public.review;
+create policy review_write on public.review for all to authenticated
+  using (author_id = (auth.uid())::text) with check (author_id = (auth.uid())::text);
+
+-- dispute: visible to the opener and either party of the contract; opener writes.
+grant select, insert, update, delete on public.dispute to authenticated;
+drop policy if exists dispute_party_read on public.dispute;
+create policy dispute_party_read on public.dispute for select to authenticated
+  using (opened_by_id = (auth.uid())::text
+         or exists (select 1 from public.contract c
+                    where c.id = dispute.contract_id
+                      and (c.creator_id = (auth.uid())::text or c.client_id = (auth.uid())::text)));
+drop policy if exists dispute_owner_write on public.dispute;
+create policy dispute_owner_write on public.dispute for all to authenticated
+  using (opened_by_id = (auth.uid())::text) with check (opened_by_id = (auth.uid())::text);
 
 -- ---- server-only tables (no API access) ----
 -- RLS enabled + no policies + no anon/authenticated grants → fully denied on the

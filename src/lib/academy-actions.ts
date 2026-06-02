@@ -12,6 +12,7 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
 import { requireFeatureAccess } from "./entitlements";
+import { DEMO_MODE } from "./client/config";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { academy, academyEnrollment, learningPath, lesson, lessonProgress } from "./db/schema";
@@ -136,34 +137,37 @@ async function ensureAcademyRow(userId: string, userName?: string | null): Promi
     updatedAt: now,
   });
 
-  // Seed example paths + lessons.
-  const base = Date.now();
-  for (let pi = 0; pi < SEED_PATHS.length; pi++) {
-    const { path, lessons } = SEED_PATHS[pi];
-    const pathId = genId("path");
-    await db.insert(learningPath).values({
-      id: pathId,
-      academyId: id,
-      userId,
-      title: path.title,
-      description: path.description,
-      level: path.level,
-      coverImage: null,
-      createdAt: new Date(base + pi * 1000),
-    });
-    if (lessons.length) {
-      await db.insert(lesson).values(
-        lessons.map((l, i) => ({
-          id: genId("les"),
-          pathId,
-          userId,
-          title: l.title,
-          content: l.content,
-          duration: l.duration,
-          position: i,
-          createdAt: new Date(base + i),
-        })),
-      );
+  // Seed example paths + lessons ONLY in demo mode. At launch (DEMO_MODE=false)
+  // a new academy starts empty — no sample/seed rows reach production (Rule 3).
+  if (DEMO_MODE) {
+    const base = Date.now();
+    for (let pi = 0; pi < SEED_PATHS.length; pi++) {
+      const { path, lessons } = SEED_PATHS[pi];
+      const pathId = genId("path");
+      await db.insert(learningPath).values({
+        id: pathId,
+        academyId: id,
+        userId,
+        title: path.title,
+        description: path.description,
+        level: path.level,
+        coverImage: null,
+        createdAt: new Date(base + pi * 1000),
+      });
+      if (lessons.length) {
+        await db.insert(lesson).values(
+          lessons.map((l, i) => ({
+            id: genId("les"),
+            pathId,
+            userId,
+            title: l.title,
+            content: l.content,
+            duration: l.duration,
+            position: i,
+            createdAt: new Date(base + i),
+          })),
+        );
+      }
     }
   }
 

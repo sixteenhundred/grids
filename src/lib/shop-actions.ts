@@ -13,6 +13,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
 import { requireFeatureAccess } from "./entitlements";
+import { DEMO_MODE } from "./client/config";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { shop, product, purchase } from "./db/schema";
@@ -94,23 +95,26 @@ async function ensureShopRow(userId: string, userName?: string | null): Promise<
     updatedAt: now,
   });
 
-  // Seed example products (newest first preserves array order).
-  const base = Date.now();
-  await db.insert(product).values(
-    SEED_PRODUCTS.map((p, i) => ({
-      id: genId("prod"),
-      shopId: id,
-      userId,
-      title: p.title,
-      description: p.description,
-      price: p.price,
-      type: p.type,
-      coverImage: p.coverImage,
-      fileName: p.fileName,
-      fileSize: p.fileSize,
-      createdAt: new Date(base - i * 1000),
-    })),
-  );
+  // Seed example products ONLY in demo mode. At launch (DEMO_MODE=false) a new
+  // shop starts empty — no sample/seed rows reach the production DB (Rule 3).
+  if (DEMO_MODE) {
+    const base = Date.now();
+    await db.insert(product).values(
+      SEED_PRODUCTS.map((p, i) => ({
+        id: genId("prod"),
+        shopId: id,
+        userId,
+        title: p.title,
+        description: p.description,
+        price: p.price,
+        type: p.type,
+        coverImage: p.coverImage,
+        fileName: p.fileName,
+        fileSize: p.fileSize,
+        createdAt: new Date(base - i * 1000),
+      })),
+    );
+  }
 
   return (await db.select().from(shop).where(eq(shop.id, id)).limit(1).then((r) => r[0]))!;
 }

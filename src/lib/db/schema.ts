@@ -202,6 +202,101 @@ export const lessonProgress = pgTable("lesson_progress", {
 });
 
 /* -------------------------------------------------------------------------- */
+/*  Bookings / contracts / reviews / disputes (relational data)                */
+/*                                                                             */
+/*  MONEY IS DELIBERATELY ABSENT here. Agreed amounts, escrow holds, payouts,  */
+/*  refunds and charges are modelled in Phase 3 alongside the Stripe/escrow    */
+/*  ledger so there is ONE source of truth for money (Rule 1). These tables    */
+/*  hold only the non-money relational record (parties, terms text, status).   */
+/* -------------------------------------------------------------------------- */
+
+/** A booking/agreement between a creator and a client (the "contract"). */
+export const contract = pgTable("contract", {
+  id: text("id").primaryKey(),
+  creatorId: text("creator_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // null until a client countersigns / is attached.
+  clientId: text("client_id").references(() => user.id, { onDelete: "set null" }),
+  packageName: text("package_name").notNull().default(""),
+  scope: text("scope").notNull().default(""),
+  deliverables: text("deliverables").notNull().default(""),
+  revisions: integer("revisions").notNull().default(0),
+  // 'Awaiting signature' | 'Active' | 'Completed'
+  status: text("status").notNull().default("Awaiting signature"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/** Append-only version history of a contract's terms (audit trail). */
+export const contractVersion = pgTable("contract_version", {
+  id: text("id").primaryKey(),
+  contractId: text("contract_id")
+    .notNull()
+    .references(() => contract.id, { onDelete: "cascade" }),
+  version: integer("version").notNull().default(1),
+  editorId: text("editor_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  note: text("note").notNull().default(""),
+  packageName: text("package_name").notNull().default(""),
+  scope: text("scope").notNull().default(""),
+  deliverables: text("deliverables").notNull().default(""),
+  revisions: integer("revisions").notNull().default(0),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/** A review left for a creative or a company by a real user. */
+export const review = pgTable("review", {
+  id: text("id").primaryKey(),
+  // who is being reviewed (a user id) and which side they are.
+  subjectId: text("subject_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // 'creative' | 'company'
+  subjectType: text("subject_type").notNull().default("creative"),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull().default(5),
+  body: text("body").notNull().default(""),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/**
+ * A dispute opened against a contract. Non-money scaffold for Phase 3: refund
+ * amounts and any reversal logic live with the Stripe/escrow ledger, not here.
+ */
+export const dispute = pgTable("dispute", {
+  id: text("id").primaryKey(),
+  contractId: text("contract_id")
+    .notNull()
+    .references(() => contract.id, { onDelete: "cascade" }),
+  openedById: text("opened_by_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // 'open' | 'in_review' | 'resolved' | 'appealed'
+  status: text("status").notNull().default("open"),
+  reason: text("reason").notNull().default(""),
+  resolution: text("resolution"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/* -------------------------------------------------------------------------- */
 /*  Admin — site-wide feature flags                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -286,6 +381,10 @@ export const schema = {
   learningPath,
   lesson,
   lessonProgress,
+  contract,
+  contractVersion,
+  review,
+  dispute,
   appConfig,
   subscription,
   usage,
