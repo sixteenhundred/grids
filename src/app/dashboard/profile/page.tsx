@@ -317,6 +317,7 @@ export default function ProfilePage() {
 
         <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "300ms" }}>
           <Button variant="ghost" onClick={() => open(<EditCompanySheet initial={client} onSave={saveClient} />)}>Edit company profile</Button>
+          <Button variant="ghost" href="/dashboard/account">Account &amp; privacy</Button>
           <Button variant="ghost" onClick={handleSignOut}>Sign out</Button>
         </div>
       </div>
@@ -419,6 +420,7 @@ export default function ProfilePage() {
 
       <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "300ms" }}>
         <Button variant="ghost" onClick={() => open(<EditCreatorSheet initial={editInitial} onSave={saveCreator} />)}>Edit profile</Button>
+        <Button variant="ghost" href="/dashboard/account">Account &amp; privacy</Button>
         <Button variant="ghost" onClick={handleSignOut}>Sign out</Button>
       </div>
     </div>

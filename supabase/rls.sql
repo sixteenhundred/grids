@@ -36,6 +36,8 @@ alter table public.review             enable row level security;
 alter table public.dispute            enable row level security;
 alter table public.portfolio_item     enable row level security;
 alter table public.creator_package    enable row level security;
+alter table public.audit_event        enable row level security;
+alter table public.consent            enable row level security;
 
 -- ---- user (mirror of auth.users): read own row only; writes via trigger ----
 grant select on public."user" to authenticated;
@@ -167,7 +169,14 @@ drop policy if exists cpackage_own on public.creator_package;
 create policy cpackage_own on public.creator_package for all to authenticated
   using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
 
+-- ---- consent: owner-only on the API surface ----
+grant select, insert, update, delete on public.consent to authenticated;
+drop policy if exists consent_own on public.consent;
+create policy consent_own on public.consent for all to authenticated
+  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
+
 -- ---- server-only tables (no API access) ----
+--   audit_event — append-only trail written by the server (data-rights, etc.)
 -- RLS enabled + no policies + no anon/authenticated grants → fully denied on the
 -- PostgREST surface. The server (Drizzle/postgres) bypasses RLS to read/write.
 --   feature_flag  — admin actions

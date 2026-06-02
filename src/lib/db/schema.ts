@@ -420,8 +420,38 @@ export const usage = pgTable("usage", {
     .notNull(),
 });
 
+/**
+ * Append-only audit trail. The app never updates or deletes these rows; user
+ * deletion sets `user_id` to null so the event survives as a retained record
+ * (data-rights requests must remain provable). Server-only on the API surface.
+ */
+export const auditEvent = pgTable("audit_event", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  detail: jsonb("detail"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+/** Per-user consent state (cookies / AI / marketing). Withdrawable any time. */
+export const consent = pgTable("consent", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  cookies: boolean("cookies").notNull().default(false),
+  ai: boolean("ai").notNull().default(false),
+  marketing: boolean("marketing").notNull().default(false),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 export const schema = {
   user,
+  auditEvent,
+  consent,
   featureFlag,
   waitlist,
   profile,
