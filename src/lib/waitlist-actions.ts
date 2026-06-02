@@ -9,6 +9,7 @@
 
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { waitlist } from "./db/schema";
@@ -75,7 +76,8 @@ export async function joinWaitlist(
       // Re-joining after unsubscribing re-grants consent (explicit opt-in).
       if (existing.unsubscribedAt) {
         await db.update(waitlist).set({ unsubscribedAt: null }).where(eq(waitlist.id, existing.id));
-        await sendSignupEmails(email, existing.token ?? "");
+        const t = existing.token ?? "";
+        after(() => sendSignupEmails(email, t)); // async: don't block the response
         return { ok: true, message: "You're back on the list." };
       }
       return { ok: true, already: true, message: "You're already on the list." };
@@ -83,7 +85,7 @@ export async function joinWaitlist(
     const id = `wl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     const token = `unsub_${randomBytes(24).toString("hex")}`;
     await db.insert(waitlist).values({ id, email, unsubscribeToken: token }).onConflictDoNothing();
-    await sendSignupEmails(email, token); // best-effort; never blocks the signup
+    after(() => sendSignupEmails(email, token)); // async: emails go out after the response
     return { ok: true, message: "You're on the list." };
   } catch {
     if (memEmails.has(email)) {

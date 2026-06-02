@@ -13,6 +13,7 @@ import { z } from "zod";
 import { requireUser, authErrorResponse, type AuthedUser } from "@/lib/security/auth-guard";
 import { canAccessFeature } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/security/rate-limit";
+import { reportError } from "@/lib/monitoring";
 import { generateConcepts } from "@/lib/campaign-actions";
 
 export const runtime = "nodejs";
@@ -70,7 +71,8 @@ export async function POST(req: Request) {
   try {
     const result = await generateConcepts(parsed.data);
     return NextResponse.json(result, { status: 200 });
-  } catch {
+  } catch (err) {
+    await reportError(err, { route: "/api/ai/campaign", userId: user.id });
     return NextResponse.json({ error: "Generation failed. Please try again." }, { status: 502 });
   }
 }

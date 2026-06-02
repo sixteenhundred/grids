@@ -28,7 +28,10 @@ import {
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
 import { rateLimit } from "./security/rate-limit";
+import { cached, invalidate } from "./cache";
 import type { Creative, Review, Tile, Category } from "./grid-data";
+
+const CREATORS_CACHE_KEY = "creators:list";
 
 // Input size caps (defence against oversized/abusive payloads).
 const CAP = { name: 80, specialty: 80, city: 80, bio: 4000, pkgName: 80, pkgDetail: 300, review: 4000, fileName: 300 } as const;
@@ -226,6 +229,7 @@ export async function saveMyProfile(input: {
       updatedAt: new Date(),
     })
     .where(eq(profile.userId, u.id));
+  await invalidate(CREATORS_CACHE_KEY); // publish/field change → refresh the list
 }
 
 /* -------------------------------------------------------------------------- */
@@ -282,6 +286,7 @@ export async function addPortfolioItem(input: {
     await deleteObject(u.id, input.path, input.size);
     throw e;
   }
+  await invalidate(CREATORS_CACHE_KEY); // card cover may change
   const res = await getSignedDownloadUrl(input.path);
   return { id, url: res.ok ? res.data.url : "", title: (input.title ?? "").trim() };
 }
@@ -297,6 +302,7 @@ export async function removePortfolioItem(id: string): Promise<void> {
   if (!it) return;
   await db.delete(portfolioItem).where(and(eq(portfolioItem.id, id), eq(portfolioItem.userId, u.id)));
   await deleteObject(u.id, it.imagePath, it.fileSize);
+  await invalidate(CREATORS_CACHE_KEY);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -357,21 +363,27 @@ export async function addReview(subjectId: string, rating: number, body: string)
 /*  Public marketplace                                                         */
 /* -------------------------------------------------------------------------- */
 
-/** Published creators for the /browse marketplace (empty until creators join). */
+/**
+ * Published creators for the /browse marketplace (empty until creators join).
+ * Cached ~30s (shared, non-sensitive list) so it isn't recomputed — with its
+ * per-creator queries + signed URLs — on every visitor's load.
+ */
 export async function listCreators(): Promise<Creative[]> {
   await requireUser(); // marketplace lives behind the dashboard
-  const rows = await db
-    .select({ p: profile, name: user.name })
-    .from(profile)
-    .innerJoin(user, eq(profile.userId, user.id))
-    .where(eq(profile.published, true))
-    .orderBy(desc(profile.updatedAt));
-  const out: Creative[] = [];
-  for (const { p, name } of rows) {
-    const [{ urls }, agg] = await Promise.all([signedPortfolio(p.userId), reviewAgg(p.userId)]);
-    out.push(toCreative(p, p.displayName ?? name, urls, [], agg));
-  }
-  return out;
+  return cached(CREATORS_CACHE_KEY, 30, async () => {
+    const rows = await db
+      .select({ p: profile, name: user.name })
+      .from(profile)
+      .innerJoin(user, eq(profile.userId, user.id))
+      .where(eq(profile.published, true))
+      .orderBy(desc(profile.updatedAt));
+    const out: Creative[] = [];
+    for (const { p, name } of rows) {
+      const [{ urls }, agg] = await Promise.all([signedPortfolio(p.userId), reviewAgg(p.userId)]);
+      out.push(toCreative(p, p.displayName ?? name, urls, [], agg));
+    }
+    return out;
+  });
 }
 
 /** A single creator by handle or user id (published, or the owner previewing). */

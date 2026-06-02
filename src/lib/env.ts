@@ -58,10 +58,15 @@ const serverEnvSchema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_BUCKET: z.string().optional(),
 
-  // ---- Webhooks / rate-limit backend (optional) ----
+  // ---- Webhooks / rate-limit + cache backend (optional) ----
   WEBHOOK_SIGNING_SECRET: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+  // ---- Monitoring (Sentry — optional; needs `npm i @sentry/nextjs`) ----
+  SENTRY_DSN: z.string().optional(),
+  // Package name read at runtime so the optional import isn't bundle-resolved.
+  SENTRY_PKG: z.string().default("@sentry/nextjs"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -105,3 +110,8 @@ export const isS3Configured = (): boolean => {
   const e = getServerEnv();
   return !!e.S3_ACCESS_KEY_ID && !!e.S3_SECRET_ACCESS_KEY && !!e.S3_BUCKET;
 };
+export const isCacheConfigured = (): boolean => {
+  const e = getServerEnv();
+  return !!e.UPSTASH_REDIS_REST_URL && !!e.UPSTASH_REDIS_REST_TOKEN;
+};
+export const isSentryConfigured = (): boolean => !!getServerEnv().SENTRY_DSN;
