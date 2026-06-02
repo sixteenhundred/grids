@@ -164,7 +164,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "security",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
+    status: "in-review",
     summary: "GRID is built to detect, contain, investigate and recover from incidents — designed on zero-trust and least-privilege, with everything sensitive logged. We describe protections honestly and never claim to be unbreakable.",
     sections: [
       { heading: "Zero trust & least privilege", body: ["Every request is verified and every action authorised. Users, creators, clients and staff can access only the data their role genuinely requires — nothing more."] },
@@ -174,7 +174,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     ],
   },
   { path: "security/encryption", title: "Encryption", category: "security", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "Data is encrypted in transit, and sensitive data at rest. Secrets are held in centralised secret management — never in source code — and credentials are rotated." },
-  { path: "security/account-protection", title: "Account Protection", category: "security", version: V, updated: TRUST_UPDATED, status: "published", summary: "Strong password hashing, rate limiting, breach detection, and multi-factor authentication for sensitive actions like payout, wallet and security changes. You can review and terminate your active sessions at any time." },
+  { path: "security/account-protection", title: "Account Protection", category: "security", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "Strong password hashing, rate limiting, breach detection, and multi-factor authentication for sensitive actions like payout, wallet and security changes. You can review and terminate your active sessions at any time." },
   { path: "security/responsible-disclosure", title: "Responsible Disclosure", category: "security", version: V, updated: TRUST_UPDATED, status: "published", summary: "Found a vulnerability? Report it to security@grid.example and we will investigate. We commit to acting in good faith with researchers who do the same — please do not access other users' data or disrupt the service." },
   { path: "security/incident-history", title: "Incident History", category: "security", version: V, updated: TRUST_UPDATED, status: "published", summary: "When incidents occur we acknowledge, investigate, document and improve — hiding mistakes causes greater damage than the mistakes themselves. No reportable security incidents to date." },
 
@@ -185,7 +185,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "payments",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
+    status: "in-review",
     summary: "Every dollar entering or leaving GRID is explainable, every balance is reconcilable, and every state change is recorded on an immutable ledger. No money moves without evidence.",
     sections: [
       { heading: "The core rule", body: ["No money moves without evidence. No balance changes without a ledger entry. Ledger entries are never edited — corrections are made with reversal entries, so the history is permanent."] },
@@ -199,7 +199,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "payments",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
+    status: "in-review",
     summary: "Client funds are held in escrow and released to the creator only on approved delivery — protecting both sides. Every escrow movement has a ledger entry and an audit event.",
     sections: [
       { heading: "How it protects both sides", body: ["The client's money is secured up front so the creator knows the work is funded; the creator is paid only when the deliverable is approved, so the client keeps control."] },
@@ -212,14 +212,14 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "payments",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
+    status: "in-review",
     summary: "A controlled, client-funded budget for real production costs — rentals, locations, travel, equipment. Every spend needs a receipt; clients always see what was spent, why, when and how much remains.",
     sections: [
       { heading: "What it's for", body: ["Production costs such as rentals, locations, travel and equipment — not personal spending."] },
       { heading: "Evidence required", body: ["No wallet spend happens without a receipt and an approval. Clients see a full, itemised spending history and the remaining balance at all times."] },
     ],
   },
-  { path: "payments/refunds-chargebacks", title: "Refunds & Chargebacks", category: "payments", version: V, updated: TRUST_UPDATED, status: "published", summary: "Refunds are traceable to a reason and a ledger entry. For card disputes, GRID assembles an evidence package — contract, messages, approvals, deliverables, timestamps — so legitimate work is defensible." },
+  { path: "payments/refunds-chargebacks", title: "Refunds & Chargebacks", category: "payments", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "Refunds are traceable to a reason and a ledger entry. For card disputes, GRID assembles an evidence package — contract, messages, approvals, deliverables, timestamps — so legitimate work is defensible." },
 
   /* ---- AI -------------------------------------------------------------- */
   {
@@ -228,7 +228,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "ai",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
+    status: "in-review",
     summary: "GRID uses AI to assist — drafting proposals, campaign concepts, summaries and matching. AI assists humans; it never replaces accountability or judgment, and its activity is logged.",
     sections: [
       { heading: "Assistance, not authority", body: ["AI outputs are starting points you review and control. When uncertainty exists, human review takes priority over automated output."] },
@@ -236,7 +236,7 @@ export const TRUST_DOCS: TrustDoc[] = [
     ],
   },
   { path: "ai/limitations", title: "AI Limitations", category: "ai", version: V, updated: TRUST_UPDATED, status: "published", summary: "AI can be wrong, biased or out of date. It does not make moderation, payment or eligibility decisions on its own. Always review AI output before relying on it." },
-  { path: "ai/your-controls", title: "Your AI Controls", category: "ai", version: V, updated: TRUST_UPDATED, status: "published", summary: "You can see your AI activity and token usage in Account → AI Usage, and grant or withdraw AI consent. Where AI assisted, GRID discloses it." },
+  { path: "ai/your-controls", title: "Your AI Controls", category: "ai", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "You can see your AI activity and token usage in Account → AI Usage, and grant or withdraw AI consent. Where AI assisted, GRID discloses it." },
   { path: "ai/model-updates", title: "Model Updates", category: "ai", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "GRID keeps a registry of the AI models in use and their versions, so changes that affect outputs are recorded and reviewable." },
 
   /* ---- Your Rights ----------------------------------------------------- */
