@@ -13,15 +13,21 @@ type Bucket = { count: number; resetAt: number };
 const buckets = new Map<string, Bucket>();
 const MAX_TRACKED_KEYS = 10_000; // backstop against unbounded growth
 
+// Policy: every rate-limit window sits in the 10–20 minute band. Enforced here
+// (centrally) so no call site can set a window outside it — clamp, don't trust.
+const MIN_WINDOW_MS = 10 * 60_000;
+const MAX_WINDOW_MS = 20 * 60_000;
+
 export type RateLimitResult = { ok: boolean; limit: number; remaining: number; resetAt: number };
 
 export function rateLimit(key: string, opts: { limit: number; windowMs: number }): RateLimitResult {
   const now = Date.now();
+  const windowMs = Math.min(MAX_WINDOW_MS, Math.max(MIN_WINDOW_MS, opts.windowMs));
   const existing = buckets.get(key);
 
   if (!existing || existing.resetAt <= now) {
     if (buckets.size > MAX_TRACKED_KEYS) sweep(now);
-    const resetAt = now + opts.windowMs;
+    const resetAt = now + windowMs;
     buckets.set(key, { count: 1, resetAt });
     return { ok: true, limit: opts.limit, remaining: opts.limit - 1, resetAt };
   }

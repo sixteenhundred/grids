@@ -15,6 +15,7 @@
 
 import { and, eq, or } from "drizzle-orm";
 import { requireUser } from "./security/auth-guard";
+import { enforceRateLimit } from "./security/rate-guard";
 import { createSupabaseAdminClient } from "./supabase/server";
 import { db } from "./db";
 import {
@@ -62,6 +63,7 @@ async function logAudit(userId: string | null, action: string, detail?: unknown)
 /** A full, machine-readable copy of the caller's data (right of access/export). */
 export async function exportMyData(): Promise<Record<string, unknown>> {
   const u = await requireUser();
+  await enforceRateLimit("sensitive", u.id);
   const byUser = <T>(p: Promise<T>) => p;
 
   const [
@@ -142,6 +144,7 @@ export async function exportMyData(): Promise<Record<string, unknown>> {
  */
 export async function deleteMyAccount(): Promise<{ ok: boolean }> {
   const u = await requireUser();
+  await enforceRateLimit("sensitive", u.id);
   // Log BEFORE deleting (the row is retained; user_id is set null by the cascade).
   await logAudit(u.id, "account_deletion_requested");
   const admin = createSupabaseAdminClient();
@@ -154,12 +157,14 @@ export type ConsentState = { cookies: boolean; ai: boolean; marketing: boolean }
 
 export async function getMyConsent(): Promise<ConsentState> {
   const u = await requireUser();
+  await enforceRateLimit("read", u.id);
   const row = await db.select().from(consent).where(eq(consent.userId, u.id)).limit(1).then((r) => r[0]);
   return { cookies: row?.cookies ?? false, ai: row?.ai ?? false, marketing: row?.marketing ?? false };
 }
 
 export async function setMyConsent(next: ConsentState): Promise<void> {
   const u = await requireUser();
+  await enforceRateLimit("write", u.id);
   const value = {
     cookies: !!next.cookies,
     ai: !!next.ai,

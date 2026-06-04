@@ -9,12 +9,16 @@
  * `source` so the UI can show whether it's live or sample data.
  */
 
+import { requireUser } from "./security/auth-guard";
+import { enforceRateLimit } from "./security/rate-guard";
 import { generateCampaignsWithAI } from "./campaign-ai";
 import { generateCampaigns, type CampaignBrief, type CampaignConcept } from "./campaign";
 
 export async function generateConcepts(
   brief: CampaignBrief,
 ): Promise<{ concepts: CampaignConcept[]; source: "ai" | "sample" }> {
+  const u = await requireUser();
+  await enforceRateLimit("ai", u.id);
   const ai = await generateCampaignsWithAI(brief);
   if (ai) return { concepts: ai, source: "ai" };
   return { concepts: generateCampaigns(brief), source: "sample" };

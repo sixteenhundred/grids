@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   }
 
   // 2) Rate-limit per user — AI calls are paid, so cap abuse and cost.
-  const rl = rateLimit(`ai:campaign:${user.id}`, { limit: 5, windowMs: 60_000 });
+  const rl = rateLimit(`ai:campaign:${user.id}`, { limit: 5, windowMs: 15 * 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Please wait a moment and try again." },

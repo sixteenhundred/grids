@@ -12,6 +12,7 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
 import { requireFeatureAccess } from "./entitlements";
+import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import { DEMO_MODE } from "./client/config";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
@@ -41,15 +42,16 @@ function genId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function requireUser() {
+async function requireUser(scope: RateScope = "write") {
   const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
   await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  await enforceRateLimit(scope, u.id);
   return u;
 }
 
 /** Running an academy is the gated "academy" feature; enrolling/learning is NOT. */
-async function requireAcademyOwner() {
-  const u = await requireUser();
+async function requireAcademyOwner(scope: RateScope = "write") {
+  const u = await requireUser(scope);
   await requireFeatureAccess(u.id, "academy"); // throws AuthError(403) below plan; no-op in demo
   return u;
 }
@@ -179,13 +181,13 @@ async function ensureAcademyRow(userId: string, userName?: string | null): Promi
 /* -------------------------------------------------------------------------- */
 
 export async function getMyAcademy(): Promise<MyAcademy> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("read");
   const a = await ensureAcademyRow(u.id, u.name);
   return { academyId: a.id, config: toConfig(a), paths: await pathsWithCounts(a.id, a.name, u.id) };
 }
 
 export async function updateAcademyConfig(config: AcademyConfig): Promise<void> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("write");
   const a = await ensureAcademyRow(u.id, u.name);
   await db
     .update(academy)
@@ -201,7 +203,7 @@ export async function updateAcademyConfig(config: AcademyConfig): Promise<void> 
 }
 
 export async function createPath(input: NewPath): Promise<LearningPath> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("write");
   const a = await ensureAcademyRow(u.id, u.name);
   const id = genId("path");
   await db.insert(learningPath).values({
@@ -219,12 +221,12 @@ export async function createPath(input: NewPath): Promise<LearningPath> {
 }
 
 export async function removePath(id: string): Promise<void> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("write");
   await db.delete(learningPath).where(and(eq(learningPath.id, id), eq(learningPath.userId, u.id)));
 }
 
 export async function createLesson(pathId: string, input: NewLesson): Promise<Lesson> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("write");
   const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).limit(1).then((r) => r[0]);
   if (!p || p.userId !== u.id) throw new Error("Not allowed.");
   const countRow = await db.select({ n: sql<number>`count(*)` }).from(lesson).where(eq(lesson.pathId, pathId)).limit(1).then((r) => r[0]);
@@ -244,7 +246,7 @@ export async function createLesson(pathId: string, input: NewLesson): Promise<Le
 }
 
 export async function removeLesson(id: string): Promise<void> {
-  const u = await requireAcademyOwner();
+  const u = await requireAcademyOwner("write");
   await db.delete(lesson).where(and(eq(lesson.id, id), eq(lesson.userId, u.id)));
 }
 
@@ -253,6 +255,7 @@ export async function removeLesson(id: string): Promise<void> {
 /* -------------------------------------------------------------------------- */
 
 export async function listAcademies(): Promise<AcademySummary[]> {
+  await enforceRateLimit("read");
   const rows = await db
     .select({
       id: academy.id,
@@ -272,13 +275,13 @@ export async function listAcademies(): Promise<AcademySummary[]> {
 
 /** Academy IDs the current user has paid access to. */
 export async function listMyEnrollments(): Promise<string[]> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const rows = await db.select({ academyId: academyEnrollment.academyId }).from(academyEnrollment).where(eq(academyEnrollment.userId, u.id));
   return rows.map((r) => r.academyId);
 }
 
 export async function enrollAcademy(academyId: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("purchase");
   const a = await db.select().from(academy).where(eq(academy.id, academyId)).limit(1).then((r) => r[0]);
   if (!a) throw new Error("Academy not found.");
   if (await isEnrolled(u.id, academyId)) return;
@@ -286,7 +289,7 @@ export async function enrollAcademy(academyId: string): Promise<void> {
 }
 
 export async function getAcademyById(academyId: string): Promise<AcademyView | null> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const a = await db.select().from(academy).where(eq(academy.id, academyId)).limit(1).then((r) => r[0]);
   if (!a) return null;
   const isOwner = a.userId === u.id;
@@ -296,7 +299,7 @@ export async function getAcademyById(academyId: string): Promise<AcademyView | n
 }
 
 export async function getPath(pathId: string): Promise<PathDetail | null> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const p = await db.select().from(learningPath).where(eq(learningPath.id, pathId)).limit(1).then((r) => r[0]);
   if (!p) return null;
   const a = await db.select().from(academy).where(eq(academy.id, p.academyId)).limit(1).then((r) => r[0]);
@@ -324,7 +327,7 @@ export async function getPath(pathId: string): Promise<PathDetail | null> {
 }
 
 export async function getLesson(lessonId: string): Promise<LessonDetail | null> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const l = await db.select().from(lesson).where(eq(lesson.id, lessonId)).limit(1).then((r) => r[0]);
   if (!l) return null;
   const p = await db.select().from(learningPath).where(eq(learningPath.id, l.pathId)).limit(1).then((r) => r[0]);
@@ -357,7 +360,7 @@ export async function getLesson(lessonId: string): Promise<LessonDetail | null> 
 }
 
 export async function setLessonComplete(lessonId: string, done: boolean): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("write");
   if (done) {
     const existing = await db
       .select()

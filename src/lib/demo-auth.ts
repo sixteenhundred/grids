@@ -10,8 +10,10 @@
  */
 
 import { createSupabaseServerClient } from "./supabase/server";
+import { enforceRateLimit } from "./security/rate-guard";
 
 export async function guestLogin(): Promise<{ ok: boolean }> {
+  await enforceRateLimit("auth");
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInAnonymously();
   return { ok: !error };

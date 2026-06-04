@@ -8,13 +8,12 @@
  */
 
 import { randomBytes } from "crypto";
-import { headers } from "next/headers";
 import { after } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { waitlist } from "./db/schema";
 import { getServerEnv } from "./env";
-import { rateLimit } from "./security/rate-limit";
+import { enforceRateLimit } from "./security/rate-guard";
 import { sendEmail } from "./services/email.service";
 import { waitlistConfirmation, waitlistNotification } from "./email-templates";
 
@@ -45,12 +44,6 @@ async function sendSignupEmails(email: string, token: string): Promise<void> {
   }
 }
 
-/** Best-effort client IP from proxy headers (for the public rate-limit). */
-async function clientIp(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "anon";
-}
-
 export async function joinWaitlist(
   rawEmail: string,
 ): Promise<{ ok: boolean; message: string; already?: boolean }> {
@@ -60,8 +53,9 @@ export async function joinWaitlist(
   }
 
   // Abuse guard: cap signups per IP (public, unauthenticated endpoint).
-  const ip = await clientIp();
-  if (!rateLimit(`waitlist:${ip}`, { limit: 8, windowMs: 10 * 60_000 }).ok) {
+  try {
+    await enforceRateLimit("auth");
+  } catch {
     return { ok: false, message: "Too many attempts. Please try again in a few minutes." };
   }
 

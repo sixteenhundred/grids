@@ -16,6 +16,7 @@ import { sql, desc } from "drizzle-orm";
 import { db } from "./db";
 import { featureFlag, waitlist } from "./db/schema";
 import { getCurrentUser } from "./security/auth-guard";
+import { enforceRateLimit } from "./security/rate-guard";
 import { isPlatformLive, setPlatformLive } from "./config-store";
 import { isAdminEmail } from "./admin";
 import { FEATURE_DEFAULTS, FEATURE_KEYS } from "./features";
@@ -78,7 +79,8 @@ export async function setFlag(
   key: string,
   enabled: boolean,
 ): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("write", email);
   if (!FEATURE_KEYS.has(key)) return { ok: false, message: "Unknown feature." };
 
   try {
@@ -98,7 +100,8 @@ export async function setFlag(
 }
 
 export async function setAllFlags(enabled: boolean): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("write", email);
   try {
     const now = new Date();
     const values = [...FEATURE_KEYS].map((key) => ({ key, enabled, updatedAt: now }));
@@ -120,7 +123,8 @@ export async function setAllFlags(enabled: boolean): Promise<ServerActionResult>
 }
 
 export async function resetFlags(): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("sensitive", email);
   try {
     await db.delete(featureFlag);
   } catch {
@@ -183,7 +187,8 @@ async function probeDb(): Promise<DbStatus> {
 }
 
 export async function auditServer(): Promise<AuditReport> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("read", email);
   const flags = await getFlags();
   const off = Object.entries(flags)
     .filter(([, on]) => !on)
@@ -212,7 +217,8 @@ export async function auditServer(): Promise<AuditReport> {
 }
 
 export async function cleanServer(): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("sensitive", email);
   // Supabase Auth manages session expiry; nothing to purge here.
   revalidatePath("/", "layout");
   return {
@@ -222,7 +228,8 @@ export async function cleanServer(): Promise<ServerActionResult> {
 }
 
 export async function restartServer(): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("sensitive", email);
   BOOT_ID = Math.random().toString(36).slice(2, 10);
   BOOTED_AT = Date.now();
   revalidatePath("/", "layout");
@@ -241,7 +248,8 @@ export type WaitlistEntry = { email: string; joinedAt: string };
 
 /** All waitlist signups, newest first (admin only). */
 export async function listWaitlist(): Promise<WaitlistEntry[]> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("read", email);
   try {
     const rows = await db
       .select({ email: waitlist.email, createdAt: waitlist.createdAt })
@@ -263,7 +271,8 @@ export async function getPlatformLive(): Promise<boolean> {
 
 /** Flip the launch switch (admin only). Editable live — no redeploy. */
 export async function setPlatformLiveFlag(live: boolean): Promise<ServerActionResult> {
-  await requireAdmin();
+  const email = await requireAdmin();
+  await enforceRateLimit("sensitive", email);
   await setPlatformLive(live);
   revalidatePath("/", "layout");
   return {

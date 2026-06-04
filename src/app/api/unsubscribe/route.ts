@@ -8,10 +8,11 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { waitlist } from "@/lib/db/schema";
+import { enforceRateLimit } from "@/lib/security/rate-guard";
 
 export const runtime = "nodejs";
 
-function page(title: string, body: string): NextResponse {
+function page(title: string, body: string, status = 200): NextResponse {
   const html = `<!doctype html><html><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex"/><title>${title}</title></head>
@@ -21,10 +22,15 @@ function page(title: string, body: string): NextResponse {
 <h1 style="margin-top:24px;font-size:20px;color:#fff;">${title}</h1>
 <p style="margin-top:12px;font-size:14px;line-height:1.6;color:#b8bbc2;">${body}</p>
 </div></body></html>`;
-  return new NextResponse(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+  return new NextResponse(html, { status, headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
 export async function GET(req: Request) {
+  try {
+    await enforceRateLimit("auth");
+  } catch {
+    return page("Too many requests", "Please slow down and try again in a few minutes.", 429);
+  }
   const token = new URL(req.url).searchParams.get("t")?.trim();
   if (!token) {
     return page("Invalid link", "This unsubscribe link is missing its token. Please use the link from your email.");

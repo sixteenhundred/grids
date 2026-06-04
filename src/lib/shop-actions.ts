@@ -24,7 +24,7 @@ import {
   removeObject,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
-import { rateLimit } from "./security/rate-limit";
+import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import {
   DEFAULT_CONFIG,
   SEED_PRODUCTS,
@@ -44,15 +44,16 @@ function genId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function requireUser() {
+async function requireUser(scope: RateScope = "write") {
   const u = await requireAuth(); // Supabase session; throws AuthError(401) if none
   await ensureUserRow(u); // mirror row for FK-backed inserts (belt-and-suspenders)
+  await enforceRateLimit(scope, u.id);
   return u;
 }
 
 /** Running a shop is the gated "shop" feature; buying from one is NOT. */
-async function requireShopOwner() {
-  const u = await requireUser();
+async function requireShopOwner(scope: RateScope = "write") {
+  const u = await requireUser(scope);
   await requireFeatureAccess(u.id, "shop"); // throws AuthError(403) below plan; no-op in demo
   return u;
 }
@@ -134,14 +135,14 @@ async function ensureShopRow(userId: string, userName?: string | null): Promise<
 /* -------------------------------------------------------------------------- */
 
 export async function getMyShop(): Promise<{ shopId: string; config: ShopConfig; products: ShopProduct[] }> {
-  const u = await requireShopOwner();
+  const u = await requireShopOwner("read");
   const s = await ensureShopRow(u.id, u.name);
   const rows = await db.select().from(product).where(eq(product.shopId, s.id)).orderBy(desc(product.createdAt));
   return { shopId: s.id, config: toConfig(s), products: rows.map((r) => toProduct(r, s.name)) };
 }
 
 export async function updateShopConfig(config: ShopConfig): Promise<void> {
-  const u = await requireShopOwner();
+  const u = await requireShopOwner("write");
   const s = await ensureShopRow(u.id, u.name);
   await db
     .update(shop)
@@ -157,7 +158,7 @@ export async function updateShopConfig(config: ShopConfig): Promise<void> {
 }
 
 export async function createProduct(input: NewProduct): Promise<ShopProduct> {
-  const u = await requireShopOwner();
+  const u = await requireShopOwner("write");
   const s = await ensureShopRow(u.id, u.name);
 
   // If the file was uploaded (via createProductUploadUrl), reserve its quota now.
@@ -205,10 +206,7 @@ export async function createProductUploadUrl(
   name: string,
   size: number,
 ): Promise<{ path: string; token: string }> {
-  const u = await requireShopOwner();
-  if (!rateLimit(`upload:${u.id}`, { limit: 60, windowMs: 15 * 60_000 }).ok) {
-    throw new Error("Too many uploads. Please wait a few minutes.");
-  }
+  const u = await requireShopOwner("upload");
   if (name.length > 300) throw new Error("File name is too long.");
   const sized = checkFileSize(size);
   if (!sized.ok) throw new Error(sized.reason);
@@ -224,7 +222,7 @@ export async function createProductUploadUrl(
  * the product owner or anyone who has purchased it; everyone else is denied.
  */
 export async function getProductDownloadUrl(productId: string): Promise<{ url: string } | null> {
-  const u = await requireUser();
+  const u = await requireUser("download");
   const prod = await db.select().from(product).where(eq(product.id, productId)).limit(1).then((r) => r[0]);
   if (!prod || !prod.filePath) return null;
   if (prod.userId !== u.id) {
@@ -242,7 +240,7 @@ export async function getProductDownloadUrl(productId: string): Promise<{ url: s
 }
 
 export async function removeProduct(id: string): Promise<void> {
-  const u = await requireShopOwner();
+  const u = await requireShopOwner("write");
   const prod = await db
     .select({ filePath: product.filePath, fileSize: product.fileSize })
     .from(product)
@@ -260,6 +258,7 @@ export async function removeProduct(id: string): Promise<void> {
 
 /** Every product across all shops, newest first. */
 export async function listProducts(): Promise<ShopProduct[]> {
+  await enforceRateLimit("read");
   const rows = await db
     .select({ p: product, shopName: shop.name })
     .from(product)
@@ -270,6 +269,7 @@ export async function listProducts(): Promise<ShopProduct[]> {
 
 /** Every shop with a product count, for the directory. */
 export async function listShops(): Promise<ShopSummary[]> {
+  await enforceRateLimit("read");
   const rows = await db
     .select({
       id: shop.id,
@@ -290,6 +290,7 @@ export async function listShops(): Promise<ShopSummary[]> {
 export async function getShopById(
   shopId: string,
 ): Promise<{ shopId: string; config: ShopConfig; products: ShopProduct[] } | null> {
+  await enforceRateLimit("read");
   const s = await db.select().from(shop).where(eq(shop.id, shopId)).limit(1).then((r) => r[0]);
   if (!s) return null;
   const rows = await db.select().from(product).where(eq(product.shopId, s.id)).orderBy(desc(product.createdAt));
@@ -297,7 +298,7 @@ export async function getShopById(
 }
 
 export async function purchaseProduct(productId: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("purchase");
   const already = await db
     .select()
     .from(purchase)
@@ -316,7 +317,7 @@ export async function purchaseProduct(productId: string): Promise<void> {
 }
 
 export async function listMyPurchases(): Promise<string[]> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const rows = await db.select({ productId: purchase.productId }).from(purchase).where(eq(purchase.userId, u.id));
   return rows.map((r) => r.productId);
 }

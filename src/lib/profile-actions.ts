@@ -27,7 +27,7 @@ import {
   removeObject,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
-import { rateLimit } from "./security/rate-limit";
+import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import { cached, invalidate } from "./cache";
 import type { Creative, Review, Tile, Category } from "./grid-data";
 
@@ -43,9 +43,10 @@ function genId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-async function requireUser() {
+async function requireUser(scope: RateScope = "write") {
   const u = await requireAuth();
   await ensureUserRow(u);
+  await enforceRateLimit(scope, u.id);
   return u;
 }
 
@@ -165,7 +166,7 @@ export type MyProfile = {
 };
 
 export async function getMyProfile(): Promise<MyProfile> {
-  const u = await requireUser();
+  const u = await requireUser("read");
   const p = await ensureProfileRow(u.id);
   const items = await db
     .select()
@@ -212,7 +213,7 @@ export async function saveMyProfile(input: {
   available?: boolean;
   published?: boolean;
 }): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("write");
   await ensureProfileRow(u.id);
   await db
     .update(profile)
@@ -240,10 +241,7 @@ export async function createPortfolioUploadUrl(
   name: string,
   size: number,
 ): Promise<{ path: string; token: string }> {
-  const u = await requireUser();
-  if (!rateLimit(`upload:${u.id}`, { limit: 60, windowMs: 15 * 60_000 }).ok) {
-    throw new Error("Too many uploads. Please wait a few minutes.");
-  }
+  const u = await requireUser("upload");
   if (name.length > CAP.fileName) throw new Error("File name is too long.");
   const sized = checkFileSize(size);
   if (!sized.ok) throw new Error(sized.reason);
@@ -259,7 +257,7 @@ export async function addPortfolioItem(input: {
   size: number;
   title?: string;
 }): Promise<{ id: string; url: string; title: string }> {
-  const u = await requireUser();
+  const u = await requireUser("write");
   const reserved = await reserveStorage(u.id, input.size);
   if (!reserved.ok) {
     await removeObject(input.path);
@@ -292,7 +290,7 @@ export async function addPortfolioItem(input: {
 }
 
 export async function removePortfolioItem(id: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("write");
   const it = await db
     .select()
     .from(portfolioItem)
@@ -312,7 +310,7 @@ export async function removePortfolioItem(id: string): Promise<void> {
 export async function savePackages(
   list: { name: string; price: number; detail: string }[],
 ): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("write");
   await db.delete(creatorPackage).where(eq(creatorPackage.userId, u.id));
   if (!list.length) return;
   await db.insert(creatorPackage).values(
@@ -343,11 +341,8 @@ async function listReviews(subjectUserId: string): Promise<Review[]> {
 }
 
 export async function addReview(subjectId: string, rating: number, body: string): Promise<void> {
-  const u = await requireUser();
+  const u = await requireUser("review");
   if (subjectId === u.id) throw new Error("You can't review your own profile.");
-  if (!rateLimit(`review:${u.id}`, { limit: 10, windowMs: 60 * 60_000 }).ok) {
-    throw new Error("Too many reviews. Please slow down.");
-  }
   await db.insert(review).values({
     id: genId("rv"),
     subjectId,
@@ -369,7 +364,7 @@ export async function addReview(subjectId: string, rating: number, body: string)
  * per-creator queries + signed URLs — on every visitor's load.
  */
 export async function listCreators(): Promise<Creative[]> {
-  await requireUser(); // marketplace lives behind the dashboard
+  await requireUser("read"); // marketplace lives behind the dashboard
   return cached(CREATORS_CACHE_KEY, 30, async () => {
     const rows = await db
       .select({ p: profile, name: user.name })
@@ -388,6 +383,7 @@ export async function listCreators(): Promise<Creative[]> {
 
 /** A single creator by handle or user id (published, or the owner previewing). */
 export async function getCreator(idOrHandle: string): Promise<Creative | null> {
+  await enforceRateLimit("read");
   const row = await db
     .select({ p: profile, name: user.name })
     .from(profile)
@@ -418,6 +414,7 @@ export async function getCreator(idOrHandle: string): Promise<Creative | null> {
 
 /** Reviews for a creator (by handle or user id) for the detail page. */
 export async function getCreatorReviews(idOrHandle: string): Promise<Review[]> {
+  await enforceRateLimit("read");
   const row = await db
     .select({ userId: profile.userId })
     .from(profile)
