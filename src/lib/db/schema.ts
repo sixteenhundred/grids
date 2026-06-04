@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -449,6 +450,9 @@ export const usage = pgTable("usage", {
     .references(() => user.id, { onDelete: "cascade" }),
   storageBytes: bigint("storage_bytes", { mode: "number" }).notNull().default(0),
   fileCount: integer("file_count").notNull().default(0),
+  // Vault ledger (NON-MONEY accounting; billing/overage is Phase D / Rule 1).
+  transferBytes: bigint("transfer_bytes", { mode: "number" }).notNull().default(0),
+  archiveBytes: bigint("archive_bytes", { mode: "number" }).notNull().default(0),
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
@@ -482,6 +486,132 @@ export const consent = pgTable("consent", {
     .notNull(),
 });
 
+/* -------------------------------------------------------------------------- */
+/*  Vault system — ownership-based content storage (see VAULT_ARCHITECTURE.md)  */
+/*                                                                              */
+/*  Bytes live once in object storage under an immutable `files/{id}` key;      */
+/*  ownership is a DB pointer (`file.vault_id`). Transfer re-points the row —    */
+/*  no byte copy. Authz is `can(user, vault, action)` in code; RLS locks the    */
+/*  browser surface. MONEY (billing/overage/tiers) is OUT — Phase D (Rule 1).   */
+/* -------------------------------------------------------------------------- */
+
+/** A storage container. Files belong to vaults; users hold permissions on vaults. */
+export const vault = pgTable("vault", {
+  id: text("id").primaryKey(),
+  // 'personal' | 'project' | 'content' | 'team' | 'archive'
+  type: text("type").notNull(),
+  // Current owner. For a CONTENT vault this is the client (set on delivery).
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull().default(""),
+  // Content vaults attach to the originating booking (nullable).
+  contractId: text("contract_id").references(() => contract.id, { onDelete: "set null" }),
+  // 'active' | 'archived'
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+}, (t) => [
+  index("vault_owner_id_idx").on(t.ownerId),
+  index("vault_contract_id_idx").on(t.contractId),
+]);
+
+/** A file's metadata. Bytes live in object storage at the immutable `storageKey`. */
+export const file = pgTable("file", {
+  id: text("id").primaryKey(),
+  vaultId: text("vault_id")
+    .notNull()
+    .references(() => vault.id, { onDelete: "cascade" }),
+  // Immutable, identity-free object key: `files/{id}`. Transfer never changes it.
+  storageKey: text("storage_key").notNull(),
+  // Which StorageProvider holds the bytes: 'supabase' today; 'r2'|'s3' later.
+  provider: text("provider").notNull().default("supabase"),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull().default("application/octet-stream"),
+  // sha256 — powers duplicate detection / lineage later.
+  checksum: text("checksum"),
+  size: bigint("size", { mode: "number" }).notNull().default(0),
+  // Bytes survive the uploader's account deletion (client owns delivered assets).
+  uploadedBy: text("uploaded_by").references(() => user.id, { onDelete: "set null" }),
+  // 'uploading' | 'ready' | 'archived' | 'deleted' (soft delete preserves lineage)
+  status: text("status").notNull().default("uploading"),
+  // Version history (future): the file this one supersedes.
+  replacesFileId: text("replaces_file_id"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+}, (t) => [
+  index("file_vault_id_idx").on(t.vaultId),
+  index("file_checksum_idx").on(t.checksum),
+]);
+
+/** A user's role on a vault. can() reads these. One row per (vault, user). */
+export const vaultPermission = pgTable("vault_permission", {
+  id: text("id").primaryKey(),
+  vaultId: text("vault_id")
+    .notNull()
+    .references(() => vault.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // 'owner' | 'admin' | 'editor' | 'contributor' | 'viewer'
+  role: text("role").notNull().default("viewer"),
+  grantedBy: text("granted_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+}, (t) => [
+  uniqueIndex("vperm_vault_user_uq").on(t.vaultId, t.userId),
+  index("vperm_user_id_idx").on(t.userId),
+]);
+
+/** A pending invitation to a vault (opaque token, like the waitlist unsubscribe). */
+export const vaultInvite = pgTable("vault_invite", {
+  id: text("id").primaryKey(),
+  vaultId: text("vault_id")
+    .notNull()
+    .references(() => vault.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  // 'owner' | 'admin' | 'editor' | 'contributor' | 'viewer'
+  role: text("role").notNull().default("viewer"),
+  token: text("token").notNull().unique(),
+  invitedBy: text("invited_by")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // 'pending' | 'accepted' | 'revoked' | 'expired'
+  status: text("status").notNull().default("pending"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+}, (t) => [
+  index("vinvite_vault_id_idx").on(t.vaultId),
+  index("vinvite_token_idx").on(t.token),
+]);
+
+/**
+ * Transactional outbox. Domain events are written in the SAME tx as the state
+ * change; a worker drains unprocessed rows and fans out (scan, thumbnail, index).
+ * Separate from `audit_event` (the immutable compliance record).
+ */
+export const domainEvent = pgTable("domain_event", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  payload: jsonb("payload").notNull(),
+  processedAt: timestamp("processed_at"),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+}, (t) => [index("event_unprocessed_idx").on(t.processedAt)]);
+
 export const schema = {
   user,
   auditEvent,
@@ -506,4 +636,9 @@ export const schema = {
   appConfig,
   subscription,
   usage,
+  vault,
+  file,
+  vaultPermission,
+  vaultInvite,
+  domainEvent,
 };

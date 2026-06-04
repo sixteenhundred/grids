@@ -185,3 +185,43 @@ create policy consent_own on public.consent for all to authenticated
 --   subscription  — Stripe webhook (Phase 3) + entitlements reads
 --   usage         — quota service
 -- (Nothing to add — the revoke above already locks them to the API roles.)
+
+-- ============================================================================
+-- Vault system (see VAULT_ARCHITECTURE.md). The browser surface is READ-ONLY and
+-- permission-scoped; EVERY vault write goes through a server action (Drizzle/
+-- postgres bypasses RLS) gated by can(). There are deliberately NO insert/update/
+-- delete grants here, so the forge-your-own-row class (purchase/enrollment,
+-- SECURITY_AUDIT #1) cannot recur on vault data.
+-- ============================================================================
+alter table public.vault            enable row level security;
+alter table public.file             enable row level security;
+alter table public.vault_permission enable row level security;
+alter table public.vault_invite     enable row level security;
+alter table public.domain_event     enable row level security;
+
+-- vault: a member (has a permission row) may READ the vault. No browser writes.
+grant select on public.vault to authenticated;
+drop policy if exists vault_member_read on public.vault;
+create policy vault_member_read on public.vault for select to authenticated
+  using (exists (select 1 from public.vault_permission vp
+                 where vp.vault_id = vault.id and vp.user_id = (auth.uid())::text));
+
+-- file: readable by members of the file's vault. No browser writes (bytes are
+-- server-uploaded; downloads are server-minted signed URLs only).
+grant select on public.file to authenticated;
+drop policy if exists file_member_read on public.file;
+create policy file_member_read on public.file for select to authenticated
+  using (exists (select 1 from public.vault_permission vp
+                 where vp.vault_id = file.vault_id and vp.user_id = (auth.uid())::text));
+
+-- vault_permission: a user may READ only their OWN grants. Granting/revoking is
+-- server-side (can('share'/'invite')); NO insert grant → nobody can grant
+-- themselves a role on another user's vault.
+grant select on public.vault_permission to authenticated;
+drop policy if exists vperm_own_read on public.vault_permission;
+create policy vperm_own_read on public.vault_permission for select to authenticated
+  using (user_id = (auth.uid())::text);
+
+-- vault_invite, domain_event: server-only (RLS on, no grants, no policy → fully
+-- denied on the PostgREST surface). Invite accept runs through a tokened server
+-- action; events are drained by the worker. The top-of-file revoke locks them.

@@ -28,6 +28,16 @@ if (bErr && !/already exists|exists/i.test(bErr.message)) {
 }
 console.log(bErr ? "bucket 'uploads' already exists" : "bucket 'uploads' created (private)");
 
+// Vault bucket: private, service-role-only. No storage RLS policy — vault objects
+// are never addressed by the browser; access is a server-minted signed URL after
+// a can() check (VAULT_ARCHITECTURE.md §2/§11).
+const { error: vErr } = await admin.storage.createBucket("vaults", { public: false });
+if (vErr && !/already exists|exists/i.test(vErr.message)) {
+  console.error("createBucket 'vaults' failed:", vErr.message);
+  process.exit(1);
+}
+console.log(vErr ? "bucket 'vaults' already exists" : "bucket 'vaults' created (private)");
+
 // Owner-scoped policy on storage.objects (files live under `${uid}/…`).
 const sql = postgres(DBU, { ssl: "require" });
 await sql.unsafe(`
