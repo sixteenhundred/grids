@@ -87,12 +87,14 @@ function toPath(row: PathRow, academyName: string, lessonCount: number, complete
   };
 }
 
-function toLesson(row: LessonRow): Lesson {
+function toLesson(row: LessonRow, locked = false): Lesson {
   return {
     id: row.id,
     pathId: row.pathId,
     title: row.title,
-    content: row.content,
+    // Redact paid content server-side when locked — the paywall must NOT be
+    // client-render-only (#3).
+    content: locked ? "" : row.content,
     duration: row.duration,
     position: row.position,
     createdAt: row.createdAt.getTime(),
@@ -319,7 +321,7 @@ export async function getPath(pathId: string): Promise<PathDetail | null> {
     academyId: p.academyId,
     academyName,
     academyPrice,
-    lessons: lessons.map(toLesson),
+    lessons: lessons.map((l) => toLesson(l, locked)),
     completedLessonIds,
     isOwner,
     locked,
@@ -343,7 +345,7 @@ export async function getLesson(lessonId: string): Promise<LessonDetail | null> 
     .where(and(eq(lessonProgress.userId, u.id), eq(lessonProgress.lessonId, lessonId)))
     .limit(1).then((r) => r[0]);
   return {
-    lesson: toLesson(l),
+    lesson: toLesson(l, locked),
     pathId: l.pathId,
     pathTitle: p?.title ?? "Path",
     academyId: p?.academyId ?? "",
@@ -361,6 +363,29 @@ export async function getLesson(lessonId: string): Promise<LessonDetail | null> 
 
 export async function setLessonComplete(lessonId: string, done: boolean): Promise<void> {
   const u = await requireUser("write");
+  // Must have access to the lesson's academy to record progress — otherwise a
+  // non-enrolled user could fabricate completion of paid content (#N5).
+  const l = await db
+    .select({ userId: lesson.userId, pathId: lesson.pathId })
+    .from(lesson)
+    .where(eq(lesson.id, lessonId))
+    .limit(1)
+    .then((r) => r[0]);
+  if (!l) throw new Error("Lesson not found.");
+  if (l.userId !== u.id) {
+    const p = await db
+      .select({ academyId: learningPath.academyId })
+      .from(learningPath)
+      .where(eq(learningPath.id, l.pathId))
+      .limit(1)
+      .then((r) => r[0]);
+    const a = p
+      ? await db.select({ price: academy.price }).from(academy).where(eq(academy.id, p.academyId)).limit(1).then((r) => r[0])
+      : null;
+    if (p && a && a.price > 0 && !(await isEnrolled(u.id, p.academyId))) {
+      throw new Error("You're not enrolled in this academy.");
+    }
+  }
   if (done) {
     const existing = await db
       .select()

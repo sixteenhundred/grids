@@ -16,6 +16,8 @@
 import { and, eq, or } from "drizzle-orm";
 import { requireUser } from "./security/auth-guard";
 import { enforceRateLimit } from "./security/rate-guard";
+import { ensureUserRow } from "./demo-user";
+import { removeUserObjects } from "./services/storage.service";
 import { createSupabaseAdminClient } from "./supabase/server";
 import { db } from "./db";
 import {
@@ -147,6 +149,12 @@ export async function deleteMyAccount(): Promise<{ ok: boolean }> {
   await enforceRateLimit("sensitive", u.id);
   // Log BEFORE deleting (the row is retained; user_id is set null by the cascade).
   await logAudit(u.id, "account_deletion_requested");
+  // Erase the user's stored objects — the auth-user delete cascades DB rows but
+  // NOT storage objects (#6).
+  await removeUserObjects(u.id);
+  // Explicitly remove the public.user row so ALL child data cascades, regardless
+  // of whether the auth.users→public.user mirror trigger handles DELETE (#6).
+  await db.delete(user).where(eq(user.id, u.id));
   const admin = createSupabaseAdminClient();
   const { error } = await admin.auth.admin.deleteUser(u.id);
   if (error) return { ok: false };
@@ -165,6 +173,7 @@ export async function getMyConsent(): Promise<ConsentState> {
 export async function setMyConsent(next: ConsentState): Promise<void> {
   const u = await requireUser();
   await enforceRateLimit("write", u.id);
+  await ensureUserRow(u); // consent.userId → user.id FK must resolve for new users (#15)
   const value = {
     cookies: !!next.cookies,
     ai: !!next.ai,

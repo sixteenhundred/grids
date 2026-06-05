@@ -91,3 +91,52 @@ export async function deleteObject(userId: string, path: string, bytes: number):
   await removeObject(path);
   await releaseStorage(userId, bytes);
 }
+
+/**
+ * True if `path` is under the caller's OWN uid folder (and has no traversal).
+ * Object keys are `${userId}/${category}/…`, so this rejects a client that passes
+ * another user's object key back to a record action (#2 BOLA).
+ */
+export function isOwnedObjectPath(userId: string, path: string): boolean {
+  return !path.includes("..") && path.startsWith(`${userId}/`);
+}
+
+/**
+ * Actual stored size (bytes) of an object, so quota is billed by the REAL object
+ * size rather than a client-supplied number (#5 quota bypass). Fails if absent.
+ */
+export async function getObjectSize(path: string): Promise<ServiceResult<number>> {
+  if (!storageReady()) return fail("unavailable", "Storage is not configured.");
+  const supa = createSupabaseAdminClient();
+  const slash = path.lastIndexOf("/");
+  const folder = slash >= 0 ? path.slice(0, slash) : "";
+  const name = slash >= 0 ? path.slice(slash + 1) : path;
+  const { data, error } = await supa.storage.from(BUCKET).list(folder, { search: name, limit: 100 });
+  if (error) return fail("provider_error", error.message);
+  const entry = data?.find((o) => o.name === name);
+  const size = (entry?.metadata as { size?: number } | null | undefined)?.size;
+  if (typeof size !== "number") return fail("invalid_input", "Uploaded object not found.");
+  return ok(size);
+}
+
+/**
+ * Remove ALL objects under a user's `${userId}/…` prefix. The auth-user delete
+ * cascades DB rows but NOT storage objects, so account deletion calls this for
+ * genuine erasure (#6). Best-effort; walks one level of category folders.
+ */
+export async function removeUserObjects(userId: string): Promise<void> {
+  if (!storageReady()) return;
+  const supa = createSupabaseAdminClient();
+  const top = await supa.storage.from(BUCKET).list(userId, { limit: 1000 });
+  const paths: string[] = [];
+  for (const entry of top.data ?? []) {
+    const isFile = (entry.metadata as { size?: number } | null | undefined)?.size != null;
+    if (isFile) {
+      paths.push(`${userId}/${entry.name}`);
+      continue;
+    }
+    const sub = await supa.storage.from(BUCKET).list(`${userId}/${entry.name}`, { limit: 1000 });
+    for (const f of sub.data ?? []) paths.push(`${userId}/${entry.name}/${f.name}`);
+  }
+  if (paths.length) await supa.storage.from(BUCKET).remove(paths).catch(() => {});
+}

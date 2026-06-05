@@ -82,7 +82,8 @@ export const portfolioItem = pgTable("portfolio_item", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   imagePath: text("image_path").notNull(),
-  fileSize: integer("file_size").notNull().default(0),
+  // bigint: a file can exceed int4's ~2 GB and the cap is 5 GB (#9).
+  fileSize: bigint("file_size", { mode: "number" }).notNull().default(0),
   title: text("title").notNull().default(""),
   position: integer("position").notNull().default(0),
   createdAt: timestamp("created_at")
@@ -145,7 +146,8 @@ export const product = pgTable("product", {
   type: text("type").notNull().default("Preset"),
   coverImage: text("cover_image"),
   fileName: text("file_name"),
-  fileSize: integer("file_size"),
+  // bigint: deliverables can exceed int4's ~2 GB; the cap is 5 GB (#9).
+  fileSize: bigint("file_size", { mode: "number" }),
   // Supabase Storage object key for the actual deliverable (private bucket).
   filePath: text("file_path"),
   createdAt: timestamp("created_at")

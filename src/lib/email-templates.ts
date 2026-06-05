@@ -10,6 +10,15 @@
 
 import { getServerEnv } from "./env";
 
+/** Minimal HTML escape for untrusted values interpolated into email HTML (#M1). */
+const escapeHtml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 function postalAddress(): string {
   return getServerEnv().COMPANY_POSTAL_ADDRESS || "GRID — [company postal address pending]";
 }
@@ -51,7 +60,7 @@ export function waitlistNotification(email: string, when: string): { subject: st
     subject: `New Grid waitlist signup: ${email}`,
     html: SHELL(`
       <h1 style="margin:0 0 12px;font-size:18px;color:#ffffff;">New waitlist signup</h1>
-      <p style="margin:0 0 8px;font-size:14px;color:#b8bbc2;"><strong style="color:#fff;">Email:</strong> ${email}</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#b8bbc2;"><strong style="color:#fff;">Email:</strong> ${escapeHtml(email)}</p>
       <p style="margin:0;font-size:14px;color:#b8bbc2;"><strong style="color:#fff;">When:</strong> ${when}</p>
     `),
   };

@@ -19,16 +19,19 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
-import { profile, portfolioItem, creatorPackage, review, user } from "./db/schema";
+import { profile, portfolioItem, creatorPackage, review, user, contract, purchase, product } from "./db/schema";
 import {
   createSignedUploadUrl,
   getSignedDownloadUrl,
   deleteObject,
   removeObject,
+  getObjectSize,
+  isOwnedObjectPath,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
 import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import { cached, invalidate } from "./cache";
+import { DEMO_MODE } from "./client/config";
 import type { Creative, Review, Tile, Category } from "./grid-data";
 
 const CREATORS_CACHE_KEY = "creators:list";
@@ -258,7 +261,16 @@ export async function addPortfolioItem(input: {
   title?: string;
 }): Promise<{ id: string; url: string; title: string }> {
   const u = await requireUser("write");
-  const reserved = await reserveStorage(u.id, input.size);
+  // The upload URL was issued under the caller's own uid; reject any other path (#2).
+  if (!isOwnedObjectPath(u.id, input.path)) throw new Error("Invalid upload path.");
+  // Bill the ACTUAL stored size, not the client-supplied number (#5).
+  const sizeRes = await getObjectSize(input.path);
+  if (!sizeRes.ok) {
+    await removeObject(input.path);
+    throw new Error("Uploaded image not found.");
+  }
+  const size = sizeRes.data;
+  const reserved = await reserveStorage(u.id, size);
   if (!reserved.ok) {
     await removeObject(input.path);
     throw new Error(reserved.reason);
@@ -275,13 +287,13 @@ export async function addPortfolioItem(input: {
       id,
       userId: u.id,
       imagePath: input.path,
-      fileSize: input.size,
+      fileSize: size,
       title: (input.title ?? "").trim(),
       position: Number(countRow?.n ?? 0),
       createdAt: new Date(),
     });
   } catch (e) {
-    await deleteObject(u.id, input.path, input.size);
+    await deleteObject(u.id, input.path, size);
     throw e;
   }
   await invalidate(CREATORS_CACHE_KEY); // card cover may change
@@ -311,19 +323,23 @@ export async function savePackages(
   list: { name: string; price: number; detail: string }[],
 ): Promise<void> {
   const u = await requireUser("write");
-  await db.delete(creatorPackage).where(eq(creatorPackage.userId, u.id));
-  if (!list.length) return;
-  await db.insert(creatorPackage).values(
-    list.slice(0, 12).map((p, i) => ({
-      id: genId("pk"),
-      userId: u.id,
-      name: cap(p.name.trim(), CAP.pkgName),
-      price: Math.max(0, Math.round(p.price)),
-      detail: cap(p.detail.trim(), CAP.pkgDetail),
-      position: i,
-      createdAt: new Date(),
-    })),
-  );
+  // Atomic replace: delete + insert in one tx so a failure or a concurrent save
+  // can't leave the creator with zero packages (#14).
+  await db.transaction(async (tx) => {
+    await tx.delete(creatorPackage).where(eq(creatorPackage.userId, u.id));
+    if (!list.length) return;
+    await tx.insert(creatorPackage).values(
+      list.slice(0, 12).map((p, i) => ({
+        id: genId("pk"),
+        userId: u.id,
+        name: cap(p.name.trim(), CAP.pkgName),
+        price: Math.max(0, Math.round(p.price)),
+        detail: cap(p.detail.trim(), CAP.pkgDetail),
+        position: i,
+        createdAt: new Date(),
+      })),
+    );
+  });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -340,9 +356,44 @@ async function listReviews(subjectUserId: string): Promise<Review[]> {
   return rows.map((r) => ({ by: r.by, rating: r.rating, text: r.body }));
 }
 
+/**
+ * True if the author has a real engagement with the subject — a contract (as the
+ * client) or a purchase of the subject's product. The basis for a genuine review.
+ */
+async function hasTransacted(authorId: string, subjectId: string): Promise<boolean> {
+  const c = await db
+    .select({ id: contract.id })
+    .from(contract)
+    .where(and(eq(contract.clientId, authorId), eq(contract.creatorId, subjectId)))
+    .limit(1)
+    .then((r) => r[0]);
+  if (c) return true;
+  const p = await db
+    .select({ id: purchase.id })
+    .from(purchase)
+    .innerJoin(product, eq(purchase.productId, product.id))
+    .where(and(eq(purchase.userId, authorId), eq(product.userId, subjectId)))
+    .limit(1)
+    .then((r) => r[0]);
+  return !!p;
+}
+
 export async function addReview(subjectId: string, rating: number, body: string): Promise<void> {
   const u = await requireUser("review");
   if (subjectId === u.id) throw new Error("You can't review your own profile.");
+  // One review per author per subject (#11).
+  const dup = await db
+    .select({ id: review.id })
+    .from(review)
+    .where(and(eq(review.authorId, u.id), eq(review.subjectId, subjectId)))
+    .limit(1)
+    .then((r) => r[0]);
+  if (dup) throw new Error("You've already reviewed this creator.");
+  // Reviews require a real engagement — enforced at launch (inert in demo, like
+  // the entitlement gates) so production reviews can't be fabricated/bombed (#11).
+  if (!DEMO_MODE && !(await hasTransacted(u.id, subjectId))) {
+    throw new Error("You can only review someone you've worked with.");
+  }
   await db.insert(review).values({
     id: genId("rv"),
     subjectId,

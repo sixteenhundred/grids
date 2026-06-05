@@ -96,21 +96,22 @@ create policy lesson_write on public.lesson for all to authenticated
   using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
 
 -- ---- private, owner only ----
--- purchase
-grant select, insert, update, delete on public.purchase to authenticated;
+-- purchase / academy_enrollment / lesson_progress are PROOF of payment/access:
+-- the browser may READ its own rows but must NOT write them — only the server
+-- (Drizzle/postgres, bypassing RLS) inserts them after a real purchase/enroll.
+-- No write grant closes the forge-your-own-entitlement vector (SECURITY_AUDIT #1).
+grant select on public.purchase to authenticated;
 drop policy if exists purchase_own on public.purchase;
-create policy purchase_own on public.purchase for all to authenticated
-  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
--- academy_enrollment
-grant select, insert, update, delete on public.academy_enrollment to authenticated;
+create policy purchase_own on public.purchase for select to authenticated
+  using (user_id = (auth.uid())::text);
+grant select on public.academy_enrollment to authenticated;
 drop policy if exists enrollment_own on public.academy_enrollment;
-create policy enrollment_own on public.academy_enrollment for all to authenticated
-  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
--- lesson_progress
-grant select, insert, update, delete on public.lesson_progress to authenticated;
+create policy enrollment_own on public.academy_enrollment for select to authenticated
+  using (user_id = (auth.uid())::text);
+grant select on public.lesson_progress to authenticated;
 drop policy if exists progress_own on public.lesson_progress;
-create policy progress_own on public.lesson_progress for all to authenticated
-  using (user_id = (auth.uid())::text) with check (user_id = (auth.uid())::text);
+create policy progress_own on public.lesson_progress for select to authenticated
+  using (user_id = (auth.uid())::text);
 
 -- ---- contracts / versions / reviews / disputes ----
 -- contract: readable by either party; writable by the creator.

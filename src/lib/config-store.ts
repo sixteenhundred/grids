@@ -38,9 +38,14 @@ export async function setConfigValue(
     });
 }
 
-/** Launch switch. Default TRUE (platform visible) until explicitly turned off. */
+/**
+ * Launch switch. FAIL-CLOSED: an absent row OR a read error → NOT live, so
+ * visitors go to /waitlist (admins always bypass the gate). Flip on explicitly
+ * via the admin panel at launch. Previously defaulted TRUE, which exposed the
+ * platform on a fresh deploy or a transient DB error (SECURITY_AUDIT #8).
+ */
 export async function isPlatformLive(): Promise<boolean> {
-  return getConfigValue<boolean>(PLATFORM_LIVE_KEY, true);
+  return getConfigValue<boolean>(PLATFORM_LIVE_KEY, false);
 }
 
 export async function setPlatformLive(live: boolean): Promise<void> {

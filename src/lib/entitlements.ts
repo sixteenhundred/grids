@@ -42,11 +42,15 @@ export async function canAccessFeature(userId: string, key: string): Promise<boo
   if (DEMO_MODE) return true; // demo: everything unlocked
   const { plan } = await getEntitlement(userId);
 
+  // A plan from the OTHER role family isn't "rank -1" — it's simply the free tier
+  // of the family being checked (e.g. a creator's plan measured against a client
+  // feature, or vice versa after a role switch). Clamp unknown plans to the family
+  // floor so a PAYING user is never denied by an indexOf(-1) artifact (#13).
   const creatorNeed = (FEATURE_PLAN as Record<string, PlanId>)[key];
-  if (creatorNeed) return planRank(plan as PlanId) >= planRank(creatorNeed);
+  if (creatorNeed) return Math.max(0, planRank(plan as PlanId)) >= planRank(creatorNeed);
 
   const clientNeed = (FEATURE_MIN_PLAN as Record<string, ClientPlanId>)[key];
-  if (clientNeed) return clientPlanRank(plan as ClientPlanId) >= clientPlanRank(clientNeed);
+  if (clientNeed) return Math.max(0, clientPlanRank(plan as ClientPlanId)) >= clientPlanRank(clientNeed);
 
   return true; // not a gated feature
 }

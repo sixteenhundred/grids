@@ -34,6 +34,19 @@ function unsubscribeUrl(token: string): string {
   return `${base}/api/unsubscribe?t=${encodeURIComponent(token)}`;
 }
 
+/** Guarantee the row for `email` has an unsubscribe token; return the real one. */
+async function ensureUnsubToken(email: string, candidate: string): Promise<string> {
+  const row = await db
+    .select({ token: waitlist.unsubscribeToken })
+    .from(waitlist)
+    .where(eq(waitlist.email, email))
+    .limit(1)
+    .then((r) => r[0]);
+  if (row?.token) return row.token;
+  await db.update(waitlist).set({ unsubscribeToken: candidate }).where(eq(waitlist.email, email));
+  return candidate;
+}
+
 async function sendSignupEmails(email: string, token: string): Promise<void> {
   const conf = waitlistConfirmation(unsubscribeUrl(token));
   await sendEmail({ to: email, subject: conf.subject, html: conf.html }).catch(() => {});
@@ -70,7 +83,7 @@ export async function joinWaitlist(
       // Re-joining after unsubscribing re-grants consent (explicit opt-in).
       if (existing.unsubscribedAt) {
         await db.update(waitlist).set({ unsubscribedAt: null }).where(eq(waitlist.id, existing.id));
-        const t = existing.token ?? "";
+        const t = await ensureUnsubToken(email, `unsub_${randomBytes(24).toString("hex")}`);
         after(() => sendSignupEmails(email, t)); // async: don't block the response
         return { ok: true, message: "You're back on the list." };
       }
@@ -79,7 +92,10 @@ export async function joinWaitlist(
     const id = `wl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
     const token = `unsub_${randomBytes(24).toString("hex")}`;
     await db.insert(waitlist).values({ id, email, unsubscribeToken: token }).onConflictDoNothing();
-    after(() => sendSignupEmails(email, token)); // async: emails go out after the response
+    // The insert may have been a no-op (a concurrent signup won the conflict);
+    // email the token that was actually stored, not our local candidate (#M3).
+    const emailToken = await ensureUnsubToken(email, token);
+    after(() => sendSignupEmails(email, emailToken)); // async: emails go out after the response
     return { ok: true, message: "You're on the list." };
   } catch {
     if (memEmails.has(email)) {

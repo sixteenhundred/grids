@@ -22,6 +22,8 @@ import {
   getSignedDownloadUrl,
   deleteObject,
   removeObject,
+  getObjectSize,
+  isOwnedObjectPath,
 } from "./services/storage.service";
 import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./quota";
 import { enforceRateLimit, type RateScope } from "./security/rate-guard";
@@ -161,10 +163,19 @@ export async function createProduct(input: NewProduct): Promise<ShopProduct> {
   const u = await requireShopOwner("write");
   const s = await ensureShopRow(u.id, u.name);
 
-  // If the file was uploaded (via createProductUploadUrl), reserve its quota now.
-  // Reserve is atomic; on over-limit drop the orphaned upload and reject.
-  if (input.filePath && input.fileSize) {
-    const reserved = await reserveStorage(u.id, input.fileSize);
+  // If a file was uploaded (via createProductUploadUrl), validate the path belongs
+  // to the caller (#2) and reserve quota by the ACTUAL stored size (#5). Reserve
+  // is atomic; on over-limit drop the orphaned upload and reject.
+  let storedSize = 0;
+  if (input.filePath) {
+    if (!isOwnedObjectPath(u.id, input.filePath)) throw new Error("Invalid file path.");
+    const sizeRes = await getObjectSize(input.filePath);
+    if (!sizeRes.ok) {
+      await removeObject(input.filePath);
+      throw new Error("Uploaded file not found.");
+    }
+    storedSize = sizeRes.data;
+    const reserved = await reserveStorage(u.id, storedSize);
     if (!reserved.ok) {
       await removeObject(input.filePath);
       throw new Error(reserved.reason);
@@ -183,13 +194,13 @@ export async function createProduct(input: NewProduct): Promise<ShopProduct> {
       type: input.type,
       coverImage: input.coverImage,
       fileName: input.fileName,
-      fileSize: input.fileSize,
+      fileSize: input.filePath ? storedSize : null,
       filePath: input.filePath ?? null,
       createdAt: new Date(),
     });
   } catch (e) {
     // Roll back the reserved quota + uploaded object if the row insert failed.
-    if (input.filePath && input.fileSize) await deleteObject(u.id, input.filePath, input.fileSize);
+    if (input.filePath) await deleteObject(u.id, input.filePath, storedSize);
     throw e;
   }
   const row = (await db.select().from(product).where(eq(product.id, id)).limit(1).then((r) => r[0]))!;
@@ -248,8 +259,9 @@ export async function removeProduct(id: string): Promise<void> {
     .limit(1)
     .then((r) => r[0]);
   await db.delete(product).where(and(eq(product.id, id), eq(product.userId, u.id)));
-  // Free the stored object + its reserved quota (best-effort; row is already gone).
-  if (prod?.filePath && prod.fileSize) await deleteObject(u.id, prod.filePath, prod.fileSize);
+  // Free the stored object + its reserved quota. Guard on filePath ONLY so a
+  // 0-byte file (falsy fileSize) is still cleaned up, not orphaned (#S4).
+  if (prod?.filePath) await deleteObject(u.id, prod.filePath, prod.fileSize ?? 0);
 }
 
 /* -------------------------------------------------------------------------- */
