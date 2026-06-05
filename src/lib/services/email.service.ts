@@ -10,6 +10,7 @@
  */
 import { Resend } from "resend";
 import { getServerEnv, isResendConfigured } from "@/lib/env";
+import { hasConsent } from "@/lib/consent";
 import { ok, fail, type ServiceResult } from "./types";
 
 export function emailReady(): boolean {
@@ -28,10 +29,23 @@ export type SendEmailParams = {
   /** Pre-rendered HTML. */
   html: string;
   from?: string;
+  /**
+   * Set ONLY for marketing/promotional email: the recipient's user id. The send
+   * is blocked unless that user has granted marketing consent. Transactional
+   * mail (e.g. waitlist confirmation) omits this. (Objective 1 — consent gate.)
+   */
+  marketingConsentUserId?: string;
 };
 
 export async function sendEmail(params: SendEmailParams): Promise<ServiceResult<{ id: string }>> {
   const toDomain = params.to.split("@")[1] ?? "?";
+  // Consent gate: a marketing send requires explicit marketing consent from the
+  // recipient. No-ops the send (does not throw) so a caller can't accidentally
+  // mail a non-consenting user.
+  if (params.marketingConsentUserId && !(await hasConsent(params.marketingConsentUserId, "marketing"))) {
+    console.info(`[email] skipped (no marketing consent) → to=@${toDomain}`);
+    return fail("unauthorized", "Recipient has not granted marketing consent.");
+  }
   if (!isResendConfigured()) {
     // No-op until keys are set — never block the caller.
     console.info(`[email] skipped (Resend not configured) → to=@${toDomain} subject="${params.subject}"`);
