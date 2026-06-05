@@ -14,6 +14,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { requireUser as requireAuth } from "./security/auth-guard";
 import { requireFeatureAccess } from "./entitlements";
 import { DEMO_MODE } from "./client/config";
+import { safeInt, safeStr } from "./validation";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { shop, product, purchase } from "./db/schema";
@@ -188,9 +189,9 @@ export async function createProduct(input: NewProduct): Promise<ShopProduct> {
       id,
       shopId: s.id,
       userId: u.id,
-      title: input.title.trim(),
-      description: input.description.trim(),
-      price: Math.max(0, Math.round(input.price)),
+      title: safeStr(input.title, 120),
+      description: safeStr(input.description, 4000),
+      price: safeInt(input.price, { min: 0, max: 100_000_000 }),
       type: input.type,
       coverImage: input.coverImage,
       fileName: input.fileName,

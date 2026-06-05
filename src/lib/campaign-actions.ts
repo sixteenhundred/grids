@@ -12,6 +12,7 @@
 import { requireUser } from "./security/auth-guard";
 import { enforceRateLimit } from "./security/rate-guard";
 import { requireFeatureAccess } from "./entitlements";
+import { sanitizeBrief } from "./validation";
 import { generateCampaignsWithAI } from "./campaign-ai";
 import { generateCampaigns, type CampaignBrief, type CampaignConcept } from "./campaign";
 
@@ -21,7 +22,9 @@ export async function generateConcepts(
   const u = await requireUser();
   await enforceRateLimit("ai", u.id);
   await requireFeatureAccess(u.id, "campaign"); // paid feature; inert under DEMO_MODE (#4)
-  const ai = await generateCampaignsWithAI(brief);
+  // Bound every untrusted field before it reaches the model / sample generator.
+  const safe = sanitizeBrief(brief);
+  const ai = await generateCampaignsWithAI(safe);
   if (ai) return { concepts: ai, source: "ai" };
-  return { concepts: generateCampaigns(brief), source: "sample" };
+  return { concepts: generateCampaigns(safe), source: "sample" };
 }

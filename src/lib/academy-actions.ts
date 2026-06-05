@@ -14,6 +14,7 @@ import { requireUser as requireAuth } from "./security/auth-guard";
 import { requireFeatureAccess } from "./entitlements";
 import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import { DEMO_MODE } from "./client/config";
+import { safeInt, safeStr } from "./validation";
 import { ensureUserRow } from "./demo-user";
 import { db } from "./db";
 import { academy, academyEnrollment, learningPath, lesson, lessonProgress } from "./db/schema";
@@ -194,11 +195,11 @@ export async function updateAcademyConfig(config: AcademyConfig): Promise<void> 
   await db
     .update(academy)
     .set({
-      name: config.name.trim() || DEFAULT_ACADEMY.name,
-      description: config.description,
+      name: safeStr(config.name, 80) || DEFAULT_ACADEMY.name,
+      description: safeStr(config.description, 4000),
       logo: config.logo,
       banner: config.banner,
-      price: Math.max(0, Math.round(config.price)),
+      price: safeInt(config.price, { min: 0, max: 100_000_000 }),
       updatedAt: new Date(),
     })
     .where(eq(academy.id, a.id));
@@ -212,8 +213,8 @@ export async function createPath(input: NewPath): Promise<LearningPath> {
     id,
     academyId: a.id,
     userId: u.id,
-    title: input.title.trim(),
-    description: input.description.trim(),
+    title: safeStr(input.title, 120),
+    description: safeStr(input.description, 4000),
     level: input.level,
     coverImage: input.coverImage,
     createdAt: new Date(),
@@ -238,9 +239,9 @@ export async function createLesson(pathId: string, input: NewLesson): Promise<Le
     id,
     pathId,
     userId: u.id,
-    title: input.title.trim(),
-    content: input.content.trim(),
-    duration: input.duration.trim(),
+    title: safeStr(input.title, 120),
+    content: safeStr(input.content, 20000),
+    duration: safeStr(input.duration, 40),
     position,
     createdAt: new Date(),
   });

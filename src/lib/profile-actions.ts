@@ -32,6 +32,8 @@ import { reserveStorage, checkFileSize, getUsage, MAX_STORAGE_BYTES } from "./qu
 import { enforceRateLimit, type RateScope } from "./security/rate-guard";
 import { cached, invalidate } from "./cache";
 import { DEMO_MODE } from "./client/config";
+import { TALENT_CATEGORIES } from "./grid-data";
+import { safeInt, safeCategory, sanitizeEnumArray } from "./validation";
 import type { Creative, Review, Tile, Category } from "./grid-data";
 
 const CREATORS_CACHE_KEY = "creators:list";
@@ -218,16 +220,20 @@ export async function saveMyProfile(input: {
 }): Promise<void> {
   const u = await requireUser("write");
   await ensureProfileRow(u.id);
+  // Defensive: validate the category value, dedup/bound categories to the known
+  // set, and guard rate against NaN/Infinity/negatives.
+  const safeCat = safeCategory(input.cat);
+  const safeCats = input.categories ? sanitizeEnumArray(input.categories, TALENT_CATEGORIES, 12) : undefined;
   await db
     .update(profile)
     .set({
       displayName: cap(input.name.trim(), CAP.name) || u.name,
       specialty: cap(input.specialty.trim(), CAP.specialty),
       location: cap(input.city.trim(), CAP.city),
-      rate: Math.max(0, Math.round(input.rate)),
+      rate: safeInt(input.rate, { min: 0, max: 1_000_000 }),
       bio: cap(input.bio.trim(), CAP.bio),
-      ...(input.cat ? { cat: input.cat } : {}),
-      ...(input.categories ? { categories: input.categories } : {}),
+      ...(safeCat ? { cat: safeCat } : {}),
+      ...(safeCats ? { categories: safeCats } : {}),
       ...(input.available != null ? { available: input.available } : {}),
       ...(input.published != null ? { published: input.published } : {}),
       updatedAt: new Date(),
@@ -325,16 +331,18 @@ export async function savePackages(
   const u = await requireUser("write");
   // Atomic replace: delete + insert in one tx so a failure or a concurrent save
   // can't leave the creator with zero packages (#14).
+  // Guard a non-array payload + null elements; cap to 12; NaN-safe prices.
+  const items = Array.isArray(list) ? list.slice(0, 12) : [];
   await db.transaction(async (tx) => {
     await tx.delete(creatorPackage).where(eq(creatorPackage.userId, u.id));
-    if (!list.length) return;
+    if (!items.length) return;
     await tx.insert(creatorPackage).values(
-      list.slice(0, 12).map((p, i) => ({
+      items.map((p, i) => ({
         id: genId("pk"),
         userId: u.id,
-        name: cap(p.name.trim(), CAP.pkgName),
-        price: Math.max(0, Math.round(p.price)),
-        detail: cap(p.detail.trim(), CAP.pkgDetail),
+        name: cap((p?.name ?? "").trim(), CAP.pkgName),
+        price: safeInt(p?.price, { min: 0, max: 100_000_000 }),
+        detail: cap((p?.detail ?? "").trim(), CAP.pkgDetail),
         position: i,
         createdAt: new Date(),
       })),
@@ -399,7 +407,7 @@ export async function addReview(subjectId: string, rating: number, body: string)
     subjectId,
     subjectType: "creative",
     authorId: u.id,
-    rating: Math.min(5, Math.max(1, Math.round(rating))),
+    rating: safeInt(rating, { min: 1, max: 5, fallback: 5 }),
     body: cap(body.trim(), CAP.review),
     createdAt: new Date(),
   });
