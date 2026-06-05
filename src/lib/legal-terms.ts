@@ -112,6 +112,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
       { type: "p", text: "GRID may provide AI-assisted tools, including but not limited to proposal generation, contract drafting assistance, shot list creation, campaign planning, brand analysis, pricing suggestions, match scoring, sales assistance, content planning, CRM assistance, opportunity discovery, project recommendations, creative briefs, business operations suggestions, and automated workflows." },
       { type: "p", text: "AI Outputs may be inaccurate, incomplete, outdated, biased, unsuitable, unlawful, commercially unreasonable, or inappropriate for your specific circumstances. AI Outputs are not legal advice, financial advice, tax advice, investment advice, employment advice, insurance advice, production advice, business advice, or professional advice." },
       { type: "p", text: "You are solely responsible for reviewing, validating, editing, approving, rejecting, and independently verifying all AI Outputs before use. GRID is not liable for decisions, contracts, communications, payments, campaigns, pricing, deliverables, negotiations, legal positions, business strategies, or losses resulting from your use of AI Outputs." },
+      { type: "p", text: "Some AI features transmit the input you provide (such as a brief or prompt) to a third-party AI provider to generate the Output, and may use automated web search over public sources. The providers we use are identified in our Privacy Policy (Subprocessors)." },
       { type: "p", text: "You agree not to submit confidential, sensitive, regulated, unlawful, infringing, or third-party information into AI tools unless you have the legal right to do so." },
     ],
   },
@@ -211,6 +212,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
     title: "Third-Party Services",
     blocks: [
       { type: "p", text: "GRID may integrate with or rely on third-party services, including payment processors, hosting providers, cloud infrastructure providers, identity verification providers, analytics providers, AI providers, communication providers, mapping services, file storage providers, email providers, calendar providers, social media platforms, API providers, and other vendors." },
+      { type: "p", text: "Our current subprocessors include Supabase (hosting, authentication, database and storage), Anthropic (AI), and Resend (email), with Stripe (payments) at launch. The current list, with each provider's purpose, is maintained in our Privacy Policy (Subprocessors)." },
       { type: "p", text: "GRID is not responsible for third-party services, outages, errors, delays, data loss, policy changes, pricing changes, account restrictions, payment issues, API failures, security incidents, or terms imposed by third parties." },
       { type: "p", text: "Your use of third-party services may be subject to separate terms and policies." },
     ],

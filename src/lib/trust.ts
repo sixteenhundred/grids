@@ -131,15 +131,17 @@ export const TRUST_DOCS: TrustDoc[] = [
     category: "privacy",
     version: V,
     updated: TRUST_UPDATED,
-    status: "published",
-    summary: "We collect only what is reasonably necessary to run the platform: account details, profile and portfolio you choose to share, project and message activity, and payment metadata needed for escrow and tax.",
+    status: "in-review",
+    summary: "We collect what is reasonably necessary to run the platform: account details, profile and portfolio you choose to share, project and message activity, payment metadata needed for escrow and tax, and limited technical data (such as your IP address) used transiently for security.",
     sections: [
       { heading: "Account", body: ["Email, name, and the credentials needed to secure your account. Phone and identity checks are only requested where required for trust or payments."] },
       { heading: "Activity", body: ["Jobs, applications, projects, contracts, messages and files you create on GRID, plus the metadata needed to operate escrow, disputes and chargeback defence."] },
+      { heading: "Technical & security data", body: ["To keep the platform safe and prevent abuse we process technical data such as your IP address (for example, for rate-limiting). It is used transiently for security; we do not build advertising profiles from it."] },
+      { heading: "Input to AI features", body: ["When you use an AI feature, the input you provide (e.g. a campaign brief) is sent to our AI subprocessor to produce the output you asked for. See AI → How GRID Uses AI and Privacy → Subprocessors."] },
       { heading: "We minimise by default", body: ["If data is unnecessary, we do not collect it. If retention is unnecessary, we do not retain it. If access is unnecessary, we do not grant it."] },
     ],
   },
-  { path: "privacy/how-we-use-data", title: "How We Use Data", category: "privacy", version: V, updated: TRUST_UPDATED, status: "published", summary: "To operate your account, match work, process payments through escrow, keep the platform safe, meet legal duties, and — only with your consent — improve and personalise. We do not sell your personal data." },
+  { path: "privacy/how-we-use-data", title: "How We Use Data", category: "privacy", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "To operate your account, match work, process payments through escrow, deliver the features you use (including AI features, which send the input you provide to our AI subprocessor to generate your output), keep the platform safe, and meet legal duties. We also use data to develop, debug and improve GRID and to communicate with you about the service — using aggregated or de-identified data where we can, and personal data only on a lawful basis (including your consent where required). You control marketing and AI consent in Account → Consent, and withdrawing is as easy as giving it. We do not sell your personal data, and we do not use your content to train third-party AI models." },
   { path: "privacy/data-retention", title: "Data Retention", category: "privacy", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "Each data type has a defined retention period and deletion rule. Financial and audit records are kept as long as law requires; everything else is removed when no longer needed or on your request." },
   {
     path: "privacy/your-controls",
@@ -155,7 +157,21 @@ export const TRUST_DOCS: TrustDoc[] = [
       { heading: "Every request is logged", body: ["Export and deletion requests create an immutable audit event, so there is always evidence the request was made and honoured."] },
     ],
   },
-  { path: "privacy/subprocessors", title: "Subprocessors", category: "privacy", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "The vetted third parties that help run GRID (hosting, payments, email, AI). Each is inventoried with its purpose, data access and risk level, and reviewed periodically." },
+  {
+    path: "privacy/subprocessors",
+    title: "Subprocessors",
+    category: "privacy",
+    version: V,
+    updated: TRUST_UPDATED,
+    status: "in-review",
+    summary: "The vetted third parties that process data to help run GRID. Each is listed with its purpose and the data it accesses, and reviewed periodically.",
+    sections: [
+      { heading: "Supabase — hosting, auth, database & storage", body: ["Stores your account, profile, project and file data and authenticates your sessions, in managed Postgres and object storage."] },
+      { heading: "Anthropic — AI (Claude)", body: ["When you use an AI feature (e.g. Campaign), the input you provide — such as your brief — is sent to Anthropic's API to generate the output, and the model may run a web search over public sources. We do not provide your input to train Anthropic's models."] },
+      { heading: "Resend — email", body: ["Delivers transactional email such as waitlist confirmations. When you join the waitlist, the address you entered is also sent to our own team inbox as a signup notification."] },
+      { heading: "Stripe — payments (at launch)", body: ["Will process payments and payouts once payments go live; card details are handled by Stripe, not stored by GRID."] },
+    ],
+  },
 
   /* ---- Security -------------------------------------------------------- */
   {
@@ -229,14 +245,14 @@ export const TRUST_DOCS: TrustDoc[] = [
     version: V,
     updated: TRUST_UPDATED,
     status: "in-review",
-    summary: "GRID uses AI to assist — drafting proposals, campaign concepts, summaries and matching. AI assists humans; it never replaces accountability or judgment, and its activity is logged.",
+    summary: "GRID uses AI to assist — drafting proposals, campaign concepts, summaries and matching. AI assists humans; it never replaces accountability or judgment. When you use an AI feature, the input you provide is sent to our AI provider to generate the output.",
     sections: [
       { heading: "Assistance, not authority", body: ["AI outputs are starting points you review and control. When uncertainty exists, human review takes priority over automated output."] },
-      { heading: "Logged & auditable", body: ["AI requests record the feature, model provider, model name and version, and token usage — so AI activity remains visible and auditable."] },
+      { heading: "What we send to AI", body: ["When you run an AI feature, the input you provide is sent to our AI provider (Anthropic) to generate the output; for some features the model also searches the public web. We do not use your input to train AI models."] },
     ],
   },
   { path: "ai/limitations", title: "AI Limitations", category: "ai", version: V, updated: TRUST_UPDATED, status: "published", summary: "AI can be wrong, biased or out of date. It does not make moderation, payment or eligibility decisions on its own. Always review AI output before relying on it." },
-  { path: "ai/your-controls", title: "Your AI Controls", category: "ai", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "You can see your AI activity and token usage in Account → AI Usage, and grant or withdraw AI consent. Where AI assisted, GRID discloses it." },
+  { path: "ai/your-controls", title: "Your AI Controls", category: "ai", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "You can grant or withdraw AI consent in Account → Consent. AI consent governs optional uses such as personalisation and product improvement — not the core feature you actively run, which processes your input to produce the output you requested." },
   { path: "ai/model-updates", title: "Model Updates", category: "ai", version: V, updated: TRUST_UPDATED, status: "in-review", summary: "GRID keeps a registry of the AI models in use and their versions, so changes that affect outputs are recorded and reviewable." },
 
   /* ---- Your Rights ----------------------------------------------------- */
