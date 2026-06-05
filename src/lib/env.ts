@@ -21,7 +21,9 @@ import { z } from "zod";
 
 const serverEnvSchema = z.object({
   // ---- Core ----
-  DATABASE_URL: z.string().min(1).default("file:./local.db"),
+  // Required at runtime; the DB layer (db/index.ts) fails loud if it's missing.
+  // No default here — a bogus fallback would mask a misconfiguration.
+  DATABASE_URL: z.string().optional(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().optional(),

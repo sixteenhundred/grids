@@ -9,7 +9,14 @@ import { schema } from "./schema";
  *   - `prepare: false` keeps us compatible with the transaction-mode pooler
  *     (PgBouncer), which doesn't support prepared statements.
  */
-const connectionString = process.env.DATABASE_URL ?? "";
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  // Fail LOUD with a clear message rather than connecting to a broken default.
+  throw new Error(
+    "Missing required environment variable DATABASE_URL (the Supabase connection " +
+      "string). Set it in .env.local for local dev, or in your host's env for prod.",
+  );
+}
 
 const client = postgres(connectionString, {
   ssl: "require",

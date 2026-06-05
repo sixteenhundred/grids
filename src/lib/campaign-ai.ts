@@ -12,6 +12,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { getServerEnv, isAnthropicConfigured } from "./env";
 import type { Accent } from "./grid-data";
 import type { CampaignBrief, CampaignConcept, Reference } from "./campaign";
 
@@ -155,9 +156,11 @@ function toConcept(raw: RawConcept, i: number, b: CampaignBrief): CampaignConcep
  * fall back to the deterministic generator (no key, API error, or bad output).
  */
 export async function generateCampaignsWithAI(b: CampaignBrief): Promise<CampaignConcept[] | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!isAnthropicConfigured()) return null;
 
-  const client = new Anthropic();
+  // Read the key through the validated env layer (single source of truth) and
+  // pass it explicitly, rather than relying on the SDK's implicit process.env read.
+  const client = new Anthropic({ apiKey: getServerEnv().ANTHROPIC_API_KEY });
 
   try {
     // Server-side web_search runs Claude's research loop; it can pause at the
