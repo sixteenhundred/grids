@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "auth:generate": "npx @better-auth/cli@latest generate --y",
     "mockups": "node scripts/mockups-desktop.mjs",
-    "mockups:mobile": "node scripts/mockups-mobile.mjs"
+    "mockups:mobile": "node scripts/mockups-mobile.mjs",
+    "test:security": "node --test src/lib/security/domain-security.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
