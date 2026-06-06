@@ -62,6 +62,8 @@ const serverEnvSchema = z.object({
 
   // ---- Webhooks / rate-limit + cache backend (optional) ----
   WEBHOOK_SIGNING_SECRET: z.string().optional(),
+  // Auth for the scheduled /api/cron/domain-security job (Vercel Cron Bearer).
+  CRON_SECRET: z.string().optional(),
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
