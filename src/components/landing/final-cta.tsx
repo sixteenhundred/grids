@@ -6,7 +6,7 @@ import { ProfileRain } from "./profile-rain";
 const FOOTER = {
   Marketplace: ["Browse talent", "Categories", "Job board", "Urgent calls", "Radar"],
   Creators: ["Join as a creator", "Academy", "Shop", "Collab", "Finance"],
-  Company: ["About", "Trust & safety", "Grid Escrow", "Pricing", "Contact"],
+  Company: ["About", "Trust & safety", "Grid protection", "Pricing", "Contact"],
 };
 
 // Every footer link resolves to a real section, signup, or the legal page.
@@ -23,7 +23,7 @@ const LINK_MAP: Record<string, string> = {
   Finance: "/signup",
   About: "/signup",
   "Trust & safety": "/trust",
-  "Grid Escrow": "#escrow",
+  "Grid protection": "#escrow",
   Pricing: "#pricing",
   Contact: "/signup",
 };
@@ -110,7 +110,7 @@ export function SiteFooter() {
             <Link href="/trust" className="transition-colors hover:text-white">Trust Center</Link>
             <Link href="/trust/privacy" className="transition-colors hover:text-white">Privacy</Link>
             <Link href="/trust/legal/terms" className="transition-colors hover:text-white">Terms</Link>
-            <Link href="/trust/payments/escrow" className="transition-colors hover:text-white">Escrow</Link>
+            <Link href="/trust/payments/escrow" className="transition-colors hover:text-white">Payment protection</Link>
           </div>
         </div>
       </div>

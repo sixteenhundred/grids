@@ -33,7 +33,7 @@ export function Pricing() {
                     You only pay a service fee when work actually happens —
                     <span className="text-white/75"> 5% for clients on funded bookings</span>,
                     <span className="text-white/75"> 10% flat for creators on completed bookings</span>.
-                    Escrow, contracts and delivery are always included.
+                    Payment protection, contracts and delivery are always included.
                   </p>
                 </div>
                 <ul className="grid flex-1 gap-3 sm:grid-cols-2">

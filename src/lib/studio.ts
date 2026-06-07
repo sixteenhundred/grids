@@ -228,7 +228,7 @@ function script(opts: ScriptOptions): StudioSection[] {
         `Pace: ${opts.pace} — ${paceNote}`,
         `Cast (${cast.length}): ${cast.join(", ")}`,
         `Runtime target: ${lenMeta.label} · ${lenMeta.scenes} scenes`,
-        "Booked, signed and paid through Grid Escrow.",
+        "Booked, signed and paid through Grid.",
       ],
     },
   });
@@ -300,7 +300,7 @@ function proposal(brief: string): StudioSection[] {
       block: {
         type: "paras",
         items: [
-          "Fixed project rate, protected by Grid Escrow. 50% held on signing, 50% released on approved delivery — no chasing, no risk on either side.",
+          "Fixed project rate, protected by Grid. 50% held on signing, 50% released on approved delivery — no chasing, no risk on either side.",
         ],
       },
     },

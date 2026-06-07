@@ -17,7 +17,7 @@ const COPY = {
     eyebrow: "Verified visual talent",
     h1a: "Book visual talent",
     h1b: "with confidence.",
-    sub: "Hire verified photographers, cinematographers and drone pilots, without the back-and-forth. Every booking is protected by Grid Escrow.",
+    sub: "Hire verified photographers, cinematographers and drone pilots, without the back-and-forth. Every booking is protected by Grid.",
     primary: { label: "Hire a creative", href: "/signup", tone: "blue" as const },
     secondary: { label: "Browse talent", href: "#talent" },
   },

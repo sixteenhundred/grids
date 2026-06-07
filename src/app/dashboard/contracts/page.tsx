@@ -45,7 +45,7 @@ export default function ContractsPage() {
                         {c.status}
                       </StatusPill>
                       <div>
-                        <div className="text-xs text-white/45">Total in escrow</div>
+                        <div className="text-xs text-white/45">Total protected</div>
                         <div className="mt-0.5 font-mono font-semibold text-white">{money(c.total)}</div>
                       </div>
                     </div>

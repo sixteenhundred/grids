@@ -37,7 +37,7 @@ function genProposal(lead: Lead): string {
     `INVESTMENT`,
     `• Project rate: ${money(lead.value)}`,
     `• ${money(deposit)} on signing, ${money(deposit)} on approved delivery`,
-    `• Protected by Grid Escrow`,
+    `• Protected by Grid`,
   ].join("\n");
 }
 

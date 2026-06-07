@@ -269,7 +269,7 @@ export default function CreativeConciergePage() {
   // Derived recommendation text (computed from the submitted form — no time/random).
   const active = submitted ?? form;
   const goalText = active.goal.trim() || `${active.creativeType.toLowerCase()} production for ${company.name}`;
-  const suggestedStructure = `Milestone-based project: discovery & moodboard → ${active.creativeType.toLowerCase()} shoot → first edit → revisions → final delivery. Best run as a single funded project with staged escrow releases.`;
+  const suggestedStructure = `Milestone-based project: discovery & moodboard → ${active.creativeType.toLowerCase()} shoot → first edit → revisions → final delivery. Best run as a single funded project with staged payment releases.`;
   const suggestedBudget = `${active.budget} total — split ~30% on booking, ~40% on shoot completion, ~30% on final delivery.`;
   const suggestedTimeline = `${active.timeline}${active.urgency === "Urgent" ? " — prioritised; concierge will expedite outreach today." : active.urgency === "Priority" ? " — fast-tracked shortlisting." : "."}`;
   const nextStep =

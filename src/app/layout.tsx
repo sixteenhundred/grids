@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Grid.",
   description:
-    "Book visual talent with confidence. Hire verified photographers, cinematographers and drone pilots, protected by Grid Escrow.",
+    "Book visual talent with confidence. Hire verified photographers, cinematographers and drone pilots, protected by Grid.",
 };
 
 export default function RootLayout({

@@ -110,7 +110,7 @@ export function conciergePlan(prompt: string): ConciergePlan {
   const subject = prompt.trim() || "your project";
   return {
     ...base,
-    brief: `Based on "${subject.slice(0, 90)}", GRID assembled a ${base.headline.toLowerCase()}: a focused production to launch with a cohesive, premium visual identity — protected by Grid Escrow, delivered on a clear timeline.`,
+    brief: `Based on "${subject.slice(0, 90)}", GRID assembled a ${base.headline.toLowerCase()}: a focused production to launch with a cohesive, premium visual identity — protected by Grid, delivered on a clear timeline.`,
   };
 }
 

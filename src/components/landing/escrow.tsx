@@ -46,12 +46,12 @@ export function Escrow() {
             <div className="grid gap-14 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
               {/* Left — narrative + guarantees */}
               <Reveal>
-                <Eyebrow tone="green">Grid Escrow</Eyebrow>
+                <Eyebrow tone="green">Grid protection</Eyebrow>
                 <h2 className="mt-5 text-balance text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
                   Protected from brief to delivery.
                 </h2>
                 <p className="mt-5 max-w-lg text-pretty text-white/70">
-                  Grid Escrow holds funds securely before work starts and releases
+                  Grid holds funds securely before work starts and releases
                   payment after approval. Clients get confidence. Creatives get
                   paid. No chasing, no risk on either side.
                 </p>
@@ -89,7 +89,7 @@ export function Escrow() {
                             Hotel launch shoot
                           </div>
                           <div className="text-xs text-white/60">
-                            Escrow · contract #GR-2049
+                            Protected payment · contract #GR-2049
                           </div>
                         </div>
                       </div>
@@ -166,7 +166,7 @@ export function Escrow() {
                     <div className="mt-2 flex items-center justify-between rounded-[1.25rem] border border-aerial-cyan/25 bg-aerial-cyan/[0.08] px-5 py-4">
                       <div className="flex items-center gap-2.5">
                         <Lock className="text-aerial-cyan" />
-                        <span className="text-sm text-white/80">Held in escrow</span>
+                        <span className="text-sm text-white/80">Held securely</span>
                       </div>
                       <span className="font-mono text-base font-semibold text-aerial-cyan">
                         <AnimatedNumber value={3600} prefix="€" />

@@ -146,7 +146,7 @@ export default function ContractDetailPage() {
                 <Row label="Scope">{terms.scope}</Row>
                 <Row label="Deliverables">{terms.deliverables}</Row>
                 <Row label="Revisions">{terms.revisions} included</Row>
-                <Row label="Total in escrow"><span className="font-mono font-semibold text-white">{money(terms.total)}</span></Row>
+                <Row label="Total protected"><span className="font-mono font-semibold text-white">{money(terms.total)}</span></Row>
               </div>
               <div className="mt-6">
                 <Button arrow onClick={startEdit}>

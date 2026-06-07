@@ -427,7 +427,7 @@ export const COMPANIES: Record<string, Company> = {
     jobs: 34,
     reviews: [
       { by: "John Hope", rating: 5, text: "Paid the day after delivery. Clear brief, great to work with." },
-      { by: "Theo Vance", rating: 5, text: "Fast escrow release, professional team." },
+      { by: "Theo Vance", rating: 5, text: "Fast payment release, professional team." },
       { by: "Sara Okonkwo", rating: 4, text: "Good communication, slight delay on feedback round." },
     ],
   },
@@ -449,7 +449,7 @@ export const COMPANIES: Record<string, Company> = {
     paysOnTime: false,
     rating: 4.1,
     jobs: 12,
-    reviews: [{ by: "Theo Vance", rating: 4, text: "Big budgets but escrow release took a while." }],
+    reviews: [{ by: "Theo Vance", rating: 4, text: "Big budgets but payment release took a while." }],
   },
 };
 
@@ -580,13 +580,13 @@ export type NewsArticle = {
 export const NEWS: NewsArticle[] = [
   {
     id: "currencies",
-    title: "Grid Escrow now supports 4 currencies",
+    title: "Grid now supports 4 currencies",
     when: "2 days ago",
     category: "Payments",
     excerpt: "Fund and release bookings in EUR, USD, GBP and AED — with the conversion locked at contract signing.",
     body: [
-      "Grid Escrow now holds and releases funds in four currencies: EUR, USD, GBP and AED. Clients can fund a booking in their home currency, and creatives get paid in theirs — no surprise conversion fees.",
-      "The exchange rate is locked the moment the contract is signed, so the amount held in escrow is exactly the amount released on approval. Both sides see the rate up front, in the contract.",
+      "Grid now holds and releases funds in four currencies: EUR, USD, GBP and AED. Clients can fund a booking in their home currency, and creatives get paid in theirs — no surprise conversion fees.",
+      "The exchange rate is locked the moment the contract is signed, so the amount held is exactly the amount released on approval. Both sides see the rate up front, in the contract.",
       "Multi-currency payouts roll out to all verified creators this week. You can set your preferred payout currency in Finance → Bank details.",
     ],
   },
@@ -599,7 +599,7 @@ export const NEWS: NewsArticle[] = [
     body: [
       "Sometimes a shoot can't wait. Urgent job posts now push instantly to verified creatives near the location who are marked available today.",
       "Urgent jobs appear at the top of the job board, in the Urgent feed, and as a Radar alert for anyone within range. Most urgent posts get their first qualified application within 15 minutes.",
-      "To post one, hit Post a job and toggle Mark as urgent. Escrow still protects every urgent booking, start to finish.",
+      "To post one, hit Post a job and toggle Mark as urgent. Grid still protects every urgent booking, start to finish.",
     ],
   },
   {
@@ -610,7 +610,7 @@ export const NEWS: NewsArticle[] = [
     excerpt: "Build an ongoing creative pipeline with retainers and multi-month engagements, all tracked on Grid.",
     body: [
       "Grid is no longer just for one-off shoots. You can now post long-term roles — monthly content retainers, 3- and 6-month engagements, and ongoing crew arrangements.",
-      "Each milestone is funded and released through escrow as work is delivered, so creatives are paid on a predictable schedule and clients only release for approved work.",
+      "Each milestone is funded and released as work is delivered, so creatives are paid on a predictable schedule and clients only release for approved work.",
       "Long-term engagements show a dedicated timeline in Projects, with every stage, payment and deliverable in one place.",
     ],
   },
@@ -646,7 +646,7 @@ export type Notif = { icon: string; accent: Accent; title: string; detail: strin
 
 export const NOTIFS: Record<Role, Notif[]> = {
   creator: [
-    { icon: "escrow", accent: "escrow", title: "Escrow funded", detail: "Northwind Studio funded €7,150 for Signature Estate.", when: "9:41" },
+    { icon: "escrow", accent: "escrow", title: "Funds secured", detail: "Northwind Studio funded €7,150 for Signature Estate.", when: "9:41" },
     { icon: "briefcase", accent: "blue", title: "New booking request", detail: "Coastline Realty wants to book Essential Listing.", when: "8:12" },
     { icon: "star", accent: "gold", title: "New 5★ review", detail: "Azure Hotels reviewed your Aerial Set.", when: "Yesterday" },
   ],
@@ -666,7 +666,7 @@ export const TRUST_BADGES = [
   "Licensed Drone Pilot",
   "Fast Delivery",
   "Paid on Time",
-  "Escrow Protected",
+  "Payment Protected",
   "Repeat Client",
   "Available Today",
 ];

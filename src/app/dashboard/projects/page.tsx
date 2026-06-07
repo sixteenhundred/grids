@@ -26,7 +26,7 @@ export default function ProjectsPage() {
 
       <div className="rise grid grid-cols-3 gap-3" style={{ animationDelay: "60ms" }}>
         <MetricCard label="Active" value={String(PROJECTS.length)} tone="cyan" />
-        <MetricCard label="In escrow" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
+        <MetricCard label="Processing" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
         <MetricCard label="Delivered this month" value={String(2 + deliveries.length)} tone="gold" />
       </div>
 

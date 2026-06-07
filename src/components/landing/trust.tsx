@@ -7,7 +7,7 @@ const BADGES = [
   "Licensed Drone Pilot",
   "Fast Delivery",
   "Paid on Time",
-  "Escrow Protected",
+  "Payment Protected",
   "Repeat Client",
   "Available Today",
 ];
@@ -15,14 +15,14 @@ const BADGES = [
 const REVIEWS = [
   {
     quote:
-      "Booked a cinematographer for a hotel launch in under an hour. Escrow kept it safe, and payment released the moment we approved the cut.",
+      "Booked a cinematographer for a hotel launch in under an hour. Grid kept the payment safe, and it released the moment we approved the cut.",
     name: "Marte L.",
     role: "Marketing Lead · Hospitality",
     tone: "client",
   },
   {
     quote:
-      "Grid replaced my messy DMs and unpaid invoices. Contracts, escrow and reviews in one place. My rate has gone up since clients trust the profile.",
+      "Grid replaced my messy DMs and unpaid invoices. Contracts, protected payments and reviews in one place. My rate has gone up since clients trust the profile.",
     name: "Daniel V.",
     role: "Drone Pilot · Bergen",
     tone: "creator",

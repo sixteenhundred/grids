@@ -302,7 +302,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="rise grid grid-cols-2 gap-3 sm:gap-4 sm:max-w-md" style={{ animationDelay: "120ms" }}>
-          <MetricCard label="In escrow" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
+          <MetricCard label="Processing" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
           <MetricCard label="Total spent" value={money(METRICS.totalSpent)} />
         </div>
 

@@ -41,7 +41,7 @@ export function BookingFlow({ creative, pkg }: { creative: Creative; pkg: Packag
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-escrow-green/15 text-escrow-green ring-1 ring-escrow-green/30">
               <Icon name="shield" size={18} />
             </span>
-            <div className="font-semibold text-white">Grid Escrow protects this booking</div>
+            <div className="font-semibold text-white">Grid protects this booking</div>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-white/65">
             {money(pkg.price)} is held securely the moment you sign, and released to {creative.name.split(" ")[0]} only after you approve the delivery.
@@ -66,7 +66,7 @@ export function BookingFlow({ creative, pkg }: { creative: Creative; pkg: Packag
           <SheetRow label="Scope" value={pkg.detail} />
           <SheetRow label="Subtotal" value={money(pkg.price)} />
           <SheetRow label="Grid fee (10%)" value={money(fee)} />
-          <SheetRow label="Total in escrow" value={money(total)} strong />
+          <SheetRow label="Total held securely" value={money(total)} strong />
         </div>
         <p className="mt-4 flex items-center gap-2 text-xs text-white/50">
           <Icon name="lock" size={13} className="text-escrow-green" />
@@ -74,7 +74,7 @@ export function BookingFlow({ creative, pkg }: { creative: Creative; pkg: Packag
         </p>
         <div className="mt-6">
           <Button full tone="green" onClick={() => setStep("signed")}>
-            <Icon name="lock" size={15} /> Sign &amp; fund escrow
+            <Icon name="lock" size={15} /> Sign &amp; fund securely
           </Button>
         </div>
       </div>
@@ -88,7 +88,7 @@ export function BookingFlow({ creative, pkg }: { creative: Creative; pkg: Packag
       </span>
       <h2 className="mt-5 text-xl font-semibold tracking-tight text-white">Contract signed</h2>
       <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-white/60">
-        {money(total)} is held in Grid Escrow. {creative.name.split(" ")[0]} has been notified. Added to your Contracts &amp; Projects.
+        {money(total)} is held securely by Grid. {creative.name.split(" ")[0]} has been notified. Added to your Contracts &amp; Projects.
       </p>
       <div className="mt-6">
         <Button full onClick={close}>
@@ -249,7 +249,7 @@ export function NotificationsSheet({ role }: { role: Role }) {
             icon: "escrow",
             accent: "escrow" as const,
             title: "Delivery accepted — payment released",
-            detail: `${d.client} accepted ${d.projectTitle}. ${money(d.value)} released from escrow.`,
+            detail: `${d.client} accepted ${d.projectTitle}. ${money(d.value)} released to you.`,
             when: relativeTime(d.acceptedAt ?? d.createdAt),
           }));
   const list = [...deliveryNotifs, ...NOTIFS[role]];

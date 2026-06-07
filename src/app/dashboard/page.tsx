@@ -58,7 +58,7 @@ export default function DashboardHome() {
 
       {/* Metrics */}
       <section className="rise grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" style={{ animationDelay: "60ms" }}>
-        <MetricCard label="In escrow" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
+        <MetricCard label="Processing" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
         {role === "client" ? (
           <>
             <MetricCard label="Active projects" value={String(PROJECTS.length)} />
@@ -137,7 +137,7 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* Escrow trust strip */}
+      {/* Payment trust strip */}
       <Surface radius="2rem" inner="p-6 sm:p-8" className="rise" >
         <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
@@ -147,12 +147,12 @@ export default function DashboardHome() {
             <div>
               <h3 className="font-semibold text-white">Protected from brief to delivery</h3>
               <p className="mt-1 max-w-xl text-sm text-white/55">
-                Grid Escrow holds funds securely before work starts and releases payment after approval. No chasing, no risk on either side.
+                Grid holds funds securely before work starts and releases payment after approval. No chasing, no risk on either side.
               </p>
             </div>
           </div>
           <Link href="/dashboard/finance" className="shrink-0 text-sm font-medium text-escrow-green transition-colors hover:text-white">
-            View escrow →
+            View finance →
           </Link>
         </div>
       </Surface>

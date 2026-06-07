@@ -87,7 +87,7 @@ export default function ProjectBuilderPage() {
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-white/40">Total project scope</div>
                   <div className="mt-1 font-mono text-3xl font-semibold tracking-tight text-white">{money(total)}</div>
-                  <div className="mt-1 text-sm text-white/45">{active} deliverable types · protected by Grid Escrow</div>
+                  <div className="mt-1 text-sm text-white/45">{active} deliverable types · protected by Grid</div>
                 </div>
                 <div className="flex gap-2.5">
                   <Button variant="ghost" onClick={() => router.push("/dashboard/browse")}>Find creators</Button>

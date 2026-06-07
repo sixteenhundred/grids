@@ -3,7 +3,7 @@ import { Icon } from "@/components/dashboard/icons";
 
 const TRUST = [
   { title: "Verified visual talent", desc: "ID-verified photographers, filmmakers and licensed drone pilots." },
-  { title: "Protected by Grid Escrow", desc: "Funds held securely and released only on approval." },
+  { title: "Protected by Grid", desc: "Funds held securely and released only on approval." },
   { title: "Contracts & two-way reviews", desc: "Clear scope, fair pay, reputation on both sides." },
 ];
 
@@ -55,7 +55,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </span>
             <div className="leading-tight">
               <div className="text-sm font-semibold text-white">€3,600 secured</div>
-              <div className="text-xs text-white/55">Escrow · funded just now</div>
+              <div className="text-xs text-white/55">Secured · funded just now</div>
             </div>
           </div>
         </aside>

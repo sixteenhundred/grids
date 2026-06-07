@@ -128,7 +128,7 @@ export function EnrollAcademySheet({
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-escrow-green/15 text-escrow-green ring-1 ring-escrow-green/30">
             <Icon name="shield" size={18} />
           </span>
-          <div className="text-sm font-semibold text-white">Protected by Grid Escrow</div>
+          <div className="text-sm font-semibold text-white">Protected by Grid</div>
         </div>
         <div className="mt-3 flex items-center justify-between text-sm">
           <span className="text-white/55">Access</span>

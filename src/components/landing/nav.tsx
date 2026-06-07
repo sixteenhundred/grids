@@ -8,7 +8,7 @@ import { EASE_GRID } from "./motion";
 const LINKS = [
   { label: "How it works", href: "#how" },
   { label: "Talent", href: "#talent" },
-  { label: "Escrow", href: "#escrow" },
+  { label: "Payments", href: "#escrow" },
   { label: "Jobs", href: "#jobs" },
   { label: "Pricing", href: "#pricing" },
 ];

@@ -128,15 +128,15 @@ export default function FinancePage() {
       {/* Header */}
       <div className="rise">
         <PageHeader
-          eyebrow="Grid Escrow"
+          eyebrow="Grid"
           tone="escrow"
           title="Finance"
-          subtitle="Escrow balances and payouts in one place."
+          subtitle="Balances and payouts in one place."
         />
 
         {/* Metrics */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard label="In escrow" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
+          <MetricCard label="Processing" value={money(METRICS.inEscrow)} tone="escrow" sub="held, protected" />
           <MetricCard label="Available" value={money(METRICS.available)} sub="ready to withdraw" />
           {role === "client" ? (
             <MetricCard label="Total spent" value={money(METRICS.totalSpent)} />
@@ -147,9 +147,9 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* Escrow activity ledger */}
+      {/* Payment activity ledger */}
       <div className="rise" style={{ animationDelay: "80ms" }}>
-        <SectionHeader title="Escrow activity" />
+        <SectionHeader title="Payment activity" />
         <div className="flex flex-col gap-3">
           {CONTRACTS.map((c: Contract) => {
             const active = c.status === "Active";

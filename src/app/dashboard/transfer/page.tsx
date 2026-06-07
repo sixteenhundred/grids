@@ -103,7 +103,7 @@ function DeliveryReviewSheet({ delivery, onAccept }: { delivery: Delivery; onAcc
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-escrow-green/15 text-escrow-green ring-1 ring-escrow-green/30">
             <Icon name="check" size={18} />
           </span>
-          <p className="text-sm leading-snug text-white/75">Accepted — full-resolution files unlocked and {money(delivery.value)} released from escrow.</p>
+          <p className="text-sm leading-snug text-white/75">Accepted — full-resolution files unlocked and {money(delivery.value)} released from protection.</p>
         </div>
       ) : (
         <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-review-gold/25 bg-review-gold/[0.07] p-4">
@@ -135,7 +135,7 @@ function DeliveryReviewSheet({ delivery, onAccept }: { delivery: Delivery; onAcc
         <>
           <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <span className="inline-flex items-center gap-1.5 text-sm text-white/55">
-              <Icon name="shield" size={14} className="text-escrow-green" /> Held in escrow
+              <Icon name="shield" size={14} className="text-escrow-green" /> Processing
             </span>
             <span className="font-mono text-sm font-semibold text-white">{money(delivery.value)}</span>
           </div>
@@ -272,7 +272,7 @@ function TransferSheet({ onDelivered }: { onDelivered: (d: Delivery) => void }) 
           <span>
             <span className="block text-sm font-medium text-white">Mark as delivery</span>
             <span className="mt-0.5 block text-xs leading-snug text-white/55">
-              {target.withName} gets watermarked previews to review. {money(target.budget)} is released from escrow only when they accept.
+              {target.withName} gets watermarked previews to review. {money(target.budget)} is released from protection only when they accept.
             </span>
           </span>
         </button>
@@ -367,7 +367,7 @@ export default function TransferPage() {
                     {statusBadge(d)}
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-white/8 pt-4">
-                    <span className="font-mono text-xs text-white/45">{money(d.value)} in escrow</span>
+                    <span className="font-mono text-xs text-white/45">{money(d.value)} protected</span>
                     <Button tone={d.status === "accepted" ? "white" : "escrow"} variant={d.status === "accepted" ? "ghost" : "solid"} arrow onClick={() => open(<DeliveryReviewSheet delivery={d} onAccept={() => accept(d.id)} />)} className="!py-2 !pl-4">
                       {d.status === "accepted" ? "View files" : "Review & accept"}
                     </Button>

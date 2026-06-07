@@ -97,7 +97,7 @@ export default function ConciergePage() {
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full bg-gradient-to-r from-client-green to-escrow-green" style={{ width: "72%" }} />
               </div>
-              <p className="mt-2 text-xs text-white/45">Protected by Grid Escrow · released on approval.</p>
+              <p className="mt-2 text-xs text-white/45">Protected by Grid · released on approval.</p>
               <div className="mt-5">
                 <Button full tone="green" arrow onClick={() => open(<QuickProfileSheet creative={findCreative(plan.creatorIds[0])!} />)}>
                   Build shortlist

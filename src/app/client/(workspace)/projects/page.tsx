@@ -309,7 +309,7 @@ function ProjectDetail({
     {
       label: "On delivery (50%)",
       tone: project.payment === "Released" ? "green" : "cyan",
-      status: project.payment === "Released" ? "Released" : "In escrow",
+      status: project.payment === "Released" ? "Released" : "Processing",
     },
   ];
 

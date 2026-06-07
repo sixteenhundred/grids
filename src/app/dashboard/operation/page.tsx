@@ -402,7 +402,7 @@ export default function OperationPage() {
                     <p className="mt-2.5 line-clamp-1 text-[11px] text-white/45">{op.activity}</p>
                     <div className="mt-3 flex items-center gap-2 border-t border-white/8 pt-3">
                       <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: bright(op.payment === "Paid" ? palette[palette.length - 1] : op.payment === "In escrow" ? themeAt(2) : palette[0]) }}>
-                        <Icon name="wallet" size={11} /> {op.payment}
+                        <Icon name="wallet" size={11} /> {op.payment === "In escrow" ? "Processing" : op.payment}
                       </span>
                       <button onClick={() => advance(op)} className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-white/15">
                         Advance <Icon name="chevron" size={11} />
@@ -488,7 +488,7 @@ export default function OperationPage() {
               <div className="mt-3 grid grid-cols-3 gap-2">
                 {[
                   { label: "Pending", value: money(FINANCE.pending) },
-                  { label: "In escrow", value: money(FINANCE.escrow) },
+                  { label: "Processing", value: money(FINANCE.escrow) },
                   { label: "Prod. wallet", value: money(FINANCE.productionWallet) },
                   { label: "Outstanding", value: money(FINANCE.outstandingInvoices) },
                   { label: "Client LTV", value: money(FINANCE.clv) },

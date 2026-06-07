@@ -112,7 +112,7 @@ export default function CreativeProfilePage() {
               {c.topRated && <TrustBadge>Top Rated</TrustBadge>}
               {c.licensed && <TrustBadge>Licensed Drone Pilot</TrustBadge>}
               {c.available && <TrustBadge>Available Today</TrustBadge>}
-              <TrustBadge>Escrow Protected</TrustBadge>
+              <TrustBadge>Payment Protected</TrustBadge>
             </div>
 
             <p className="max-w-2xl text-pretty text-sm leading-relaxed text-white/65 sm:text-base">
@@ -183,7 +183,7 @@ export default function CreativeProfilePage() {
                 <h3 className="font-semibold text-white">Work with {firstName}</h3>
                 <p className="mt-1 max-w-xl text-sm leading-relaxed text-white/55">
                   {isClient
-                    ? `Funds are held by Grid Escrow the moment you sign and released only after you approve the delivery. ${money(c.rate)} day rate · ${c.city}.`
+                    ? `Funds are held by Grid the moment you sign and released only after you approve the delivery. ${money(c.rate)} day rate · ${c.city}.`
                     : `Reach out to talk through a collaboration or custom brief. ${money(c.rate)} day rate · ${c.city}.`}
                 </p>
               </div>

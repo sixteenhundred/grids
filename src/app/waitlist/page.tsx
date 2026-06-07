@@ -11,7 +11,7 @@ import { joinWaitlist } from "@/lib/waitlist-actions";
 
 const CREATOR_FEATURES: { icon: IconName; label: string; desc: string }[] = [
   { icon: "command", label: "My Operation", desc: "Your studio command center — pipeline, earnings, and tasks in one place." },
-  { icon: "wallet", label: "Escrow Payments", desc: "Client funds held safely in escrow and released when work is approved." },
+  { icon: "wallet", label: "Protected Payments", desc: "Client funds held safely and released when work is approved." },
   { icon: "folder", label: "File Transfer", desc: "Deliver finals to clients with secure, tracked download links." },
   { icon: "file", label: "Contracts", desc: "Draft, send, and e-sign agreements that protect both sides." },
   { icon: "sparkles", label: "AI Studio", desc: "Generate shoot concepts, briefs, and creative direction with AI." },

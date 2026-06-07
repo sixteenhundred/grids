@@ -207,7 +207,7 @@ export function generateProposal(opp: Opportunity, creatorName = "John Hope"): s
     `INVESTMENT`,
     `• Project rate: €${fee.toLocaleString()}`,
     `• ${"€" + deposit.toLocaleString()} on signing, ${"€" + deposit.toLocaleString()} on approved delivery`,
-    `• Protected by Grid Escrow — funds released only after you approve`,
+    `• Protected by Grid — funds released only after you approve`,
     ``,
     `NEXT STEP`,
     `If this resonates, reply here or book a 15-minute call and I'll tailor the package to your launch timeline.`,

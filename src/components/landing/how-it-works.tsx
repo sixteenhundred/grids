@@ -13,7 +13,7 @@ const STEPS = {
     },
     {
       n: "02",
-      title: "Book & fund escrow",
+      title: "Book & fund securely",
       body: "Pick a package, sign a digital contract and fund the job. Payment is held safely until you approve the work.",
     },
     {
@@ -31,7 +31,7 @@ const STEPS = {
     {
       n: "02",
       title: "Get booked",
-      body: "Receive bookings and apply to urgent and long-term jobs. Sign the contract, and escrow is funded before you start.",
+      body: "Receive bookings and apply to urgent and long-term jobs. Sign the contract, and funds are secured before you start.",
     },
     {
       n: "03",
