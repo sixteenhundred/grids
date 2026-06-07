@@ -26,17 +26,17 @@ type NavGroup = { heading?: string; items: NavItem[] };
 
 function navFor(role: Role): NavGroup[] {
   const main: NavItem[] = [
-    { label: "Home", href: "/dashboard", icon: "home" },
-    { label: role === "client" ? "Hire" : "Browse", href: "/dashboard/browse", icon: "compass" },
-    { label: role === "client" ? "My jobs" : "Job board", href: "/dashboard/jobs", icon: "briefcase" },
-    { label: "Projects", href: "/dashboard/projects", icon: "kanban" },
+    { label: "My Dashboard", href: "/dashboard", icon: "home" },
+    { label: "Search Creatives", href: "/dashboard/browse", icon: "compass" },
+    { label: "Find Jobs", href: "/dashboard/jobs", icon: "briefcase" },
+    { label: "My Projects", href: "/dashboard/projects", icon: "kanban" },
     { label: "Contracts", href: "/dashboard/contracts", icon: "file" },
     { label: "Finance", href: "/dashboard/finance", icon: "wallet" },
   ];
   // Creators get their operational HQ right under Home.
   if (role !== "client") main.splice(1, 0, { label: "My Operation", href: "/dashboard/operation", icon: "command" });
   // File delivery — creators send, clients receive. Sits directly under Finance.
-  main.push({ label: role === "client" ? "Deliveries" : "Transfer", href: "/dashboard/transfer", icon: "folder" });
+  main.push({ label: "Send Files", href: "/dashboard/transfer", icon: "folder" });
   const discover: NavItem[] = [
     { label: "Radar", href: "/dashboard/radar", icon: "map" },
     { label: "Community", href: "/dashboard/community", icon: "users" },

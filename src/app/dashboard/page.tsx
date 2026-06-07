@@ -15,7 +15,7 @@ export default function DashboardHome() {
   const { role } = useRole();
   const { open } = useSheet();
   const { data } = useSession();
-  const first = data?.user?.name?.split(" ")[0] ?? (role === "client" ? "there" : "creator");
+  const first = data?.user?.name?.split(" ")[0];
   const [featured, setFeatured] = useState<Creative[]>([]);
 
   useEffect(() => {
@@ -24,17 +24,13 @@ export default function DashboardHome() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Greeting + escrow callout */}
+      {/* Greeting */}
       <section className="rise">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm text-white/50">Welcome back</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">{first}.</h1>
-            <p className="mt-2 max-w-md text-sm text-white/55">
-              {role === "client"
-                ? "Find verified visual talent, post jobs and track every booking — protected by Grid Escrow."
-                : "Your bookings, jobs and tools in one place. Get discovered, get booked, get paid."}
-            </p>
+            <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">
+              {first ? `Welcome ${first}` : "Welcome"}
+            </h1>
           </div>
           <div className="flex flex-wrap gap-3">
             {role === "client" ? (
