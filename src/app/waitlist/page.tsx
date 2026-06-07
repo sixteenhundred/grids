@@ -1,32 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon, type IconName } from "@/components/dashboard/icons";
 import { joinWaitlist } from "@/lib/waitlist-actions";
-
-/* -------------------------------------------------------------------------- */
-/*  Data — features (creators prioritised)                                     */
-/* -------------------------------------------------------------------------- */
-
-const CREATOR_FEATURES: { icon: IconName; label: string; desc: string }[] = [
-  { icon: "command", label: "My Operation", desc: "Your studio command center — pipeline, earnings, and tasks in one place." },
-  { icon: "wallet", label: "Protected Payments", desc: "Client funds held safely and released when work is approved." },
-  { icon: "folder", label: "File Transfer", desc: "Deliver finals to clients with secure, tracked download links." },
-  { icon: "file", label: "Contracts", desc: "Draft, send, and e-sign agreements that protect both sides." },
-  { icon: "sparkles", label: "AI Studio", desc: "Generate shoot concepts, briefs, and creative direction with AI." },
-  { icon: "shop", label: "Shop", desc: "Sell presets, LUTs, and digital products from your own storefront." },
-  { icon: "school", label: "Academy", desc: "Turn your expertise into courses and earn from teaching." },
-  { icon: "play", label: "Campaign", desc: "AI-researched marketing campaign concepts, ready to pitch to brands." },
-  { icon: "kanban", label: "Creative CRM", desc: "Track leads and deals through a visual sales pipeline." },
-  { icon: "target", label: "First In Line", desc: "Get matched to briefs first and send proposals ahead of the pack." },
-];
-
-const CLIENT_FEATURES: { icon: IconName; label: string; desc: string }[] = [
-  { icon: "sparkles", label: "Concierge", desc: "Tell us your goal and we'll line up the right creatives for you." },
-  { icon: "layout", label: "Project Builder", desc: "Scope your shoot, budget, and deliverables in a guided flow." },
-  { icon: "kanban", label: "Deliverable Tracker", desc: "Follow every milestone and approve work as it lands." },
-];
 
 /* -------------------------------------------------------------------------- */
 /*  Liquid-glass headline (2D)                                                 */
@@ -83,33 +59,24 @@ function GlassHeadline() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Feature pill                                                               */
+/*  Feature boxes                                                              */
 /* -------------------------------------------------------------------------- */
 
-function Pill({ icon, label, desc, dim }: { icon: IconName; label: string; desc: string; dim?: boolean }) {
-  return (
-    <span className="group relative inline-block">
-      <span
-        tabIndex={0}
-        className={`inline-flex cursor-default items-center gap-2 rounded-full border outline-none backdrop-blur-md transition-colors ${
-          dim
-            ? "border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 hover:border-white/25 focus-visible:border-white/35"
-            : "border-white/20 bg-white/[0.1] px-3.5 py-2 text-xs text-white/90 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.8)] hover:border-white/40 focus-visible:border-white/50"
-        }`}
-      >
-        <Icon name={icon} size={dim ? 13 : 15} className={dim ? "text-white/45" : "text-white/75"} />
-        {label}
-      </span>
+const FEATURES: { icon: IconName; label: string }[] = [
+  { icon: "wallet", label: "Manage payments & contracts" },
+  { icon: "kanban", label: "Keep track of every project" },
+  { icon: "folder", label: "Store & transfer files" },
+  { icon: "target", label: "Find work & get discovered" },
+];
 
-      {/* hover / focus tooltip — sits above the pill so it clears the page edge */}
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2.5 w-52 max-w-[80vw] -translate-x-1/2 translate-y-1 rounded-2xl border border-white/15 bg-[#0c0716]/90 px-3.5 py-2.5 text-center text-[11px] leading-relaxed text-white/80 opacity-0 shadow-[0_16px_50px_-12px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100"
-      >
-        {desc}
-        <span className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-white/15 bg-[#0c0716]/90" />
+function FeatureBox({ icon, label }: { icon: IconName; label: string }) {
+  return (
+    <div className="flex flex-row items-center gap-3 rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3.5 text-left shadow-[0_8px_30px_-16px_rgba(0,0,0,0.8)] backdrop-blur-md transition-colors hover:border-white/30 hover:bg-white/[0.1] sm:flex-col sm:gap-2.5 sm:px-5 sm:py-5 sm:text-center">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10">
+        <Icon name={icon} size={17} className="text-white/80" />
       </span>
-    </span>
+      <span className="text-xs font-medium leading-snug text-white/85">{label}</span>
+    </div>
   );
 }
 
@@ -178,7 +145,7 @@ export default function WaitlistPage() {
       <div aria-hidden className="rainbow absolute inset-0" />
       <div aria-hidden className="rainbow-lines absolute inset-0" />
 
-      {/* bottom fade — seats the feature pills on darker ground */}
+      {/* bottom vignette — grounds the rainbow on darker ground */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5"
@@ -186,17 +153,14 @@ export default function WaitlistPage() {
       />
 
       {/* content */}
-      {/* Discreet entry into the live platform (demo). */}
-      <Link
-        href="/dashboard"
-        className="absolute right-5 top-5 z-20 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium text-white backdrop-blur-md transition-colors hover:bg-white/20"
-      >
-        Enter platform →
-      </Link>
-
       <div className="relative z-10 flex min-h-dvh flex-col">
-        <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 pt-16">
-          <GlassHeadline />
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-14">
+          <div className="flex flex-col items-center gap-4">
+            <GlassHeadline />
+            <p className="max-w-xl text-center text-[11px] font-medium uppercase leading-relaxed tracking-[0.18em] text-white/70 sm:text-xs">
+              Be one of the first in the world to step into a new era with Grid.
+            </p>
+          </div>
 
           <div className="w-full max-w-md">
             {status === "done" ? (
@@ -230,28 +194,17 @@ export default function WaitlistPage() {
             )}
             {status === "error" && <p className="mt-3 text-center text-xs text-red-200">{error}</p>}
           </div>
-        </div>
 
-        {/* liquid-glass feature pills — creators prioritised */}
-        <div className="w-full px-6 pb-10">
-          <div className="mx-auto max-w-4xl">
-            <div className="mb-2.5 text-center text-[10px] font-medium uppercase tracking-[0.28em] text-white/55">
-              For creators
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {CREATOR_FEATURES.map((f) => (
-                <Pill key={f.label} icon={f.icon} label={f.label} desc={f.desc} />
+          {/* feature boxes */}
+          <div className="w-full max-w-4xl">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f) => (
+                <FeatureBox key={f.label} icon={f.icon} label={f.label} />
               ))}
             </div>
-
-            <div className="mb-2.5 mt-6 text-center text-[10px] font-medium uppercase tracking-[0.28em] text-white/35">
-              For clients
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {CLIENT_FEATURES.map((f) => (
-                <Pill key={f.label} icon={f.icon} label={f.label} desc={f.desc} dim />
-              ))}
-            </div>
+            <p className="mt-4 text-center text-[11px] font-medium uppercase tracking-[0.22em] text-white/45">
+              + more
+            </p>
           </div>
         </div>
       </div>
