@@ -226,3 +226,35 @@ create policy vperm_own_read on public.vault_permission for select to authentica
 -- vault_invite, domain_event: server-only (RLS on, no grants, no policy → fully
 -- denied on the PostgREST surface). Invite accept runs through a tokened server
 -- action; events are drained by the worker. The top-of-file revoke locks them.
+
+-- ============================================================================
+-- Payments (Phase 3). Browser surface is READ-ONLY and party-scoped; EVERY write
+-- is server-only (Stripe/PayPal flows via Drizzle/postgres, bypassing RLS) — no
+-- write grants, so no forged payment / payout / account rows. payment_event is
+-- fully server-only. GRID stores only its own transaction activity (never a
+-- creator's real Stripe/PayPal balance), and no card/bank/login data.
+-- ============================================================================
+alter table public.payment_account enable row level security;
+alter table public.payment         enable row level security;
+alter table public.payout          enable row level security;
+alter table public.payment_event   enable row level security;
+
+-- payment_account: a user reads only their OWN connected payout account(s).
+grant select on public.payment_account to authenticated;
+drop policy if exists payacct_own on public.payment_account;
+create policy payacct_own on public.payment_account for select to authenticated
+  using (user_id = (auth.uid())::text);
+
+-- payment: readable by either party — the paying client OR the receiving creator.
+grant select on public.payment to authenticated;
+drop policy if exists payment_party_read on public.payment;
+create policy payment_party_read on public.payment for select to authenticated
+  using (client_id = (auth.uid())::text or creator_id = (auth.uid())::text);
+
+-- payout: a creator reads only their OWN payouts.
+grant select on public.payout to authenticated;
+drop policy if exists payout_own on public.payout;
+create policy payout_own on public.payout for select to authenticated
+  using (creator_id = (auth.uid())::text);
+
+-- payment_event: server-only (RLS on, no grants, no policy → denied on the API).

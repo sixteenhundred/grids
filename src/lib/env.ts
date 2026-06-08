@@ -37,9 +37,14 @@ const serverEnvSchema = z.object({
   // ---- AI (Anthropic — installed) ----
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // ---- Payments (Stripe — optional scaffold) ----
+  // ---- Payments (Stripe + PayPal) ----
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  PAYPAL_CLIENT_ID: z.string().optional(),
+  PAYPAL_CLIENT_SECRET: z.string().optional(),
+  PAYPAL_WEBHOOK_ID: z.string().optional(),
+  PAYPAL_ENV: z.enum(["sandbox", "live"]).default("sandbox"),
 
   // ---- Email (Resend) ----
   RESEND_API_KEY: z.string().optional(),
@@ -109,6 +114,10 @@ export function requireServerEnv<K extends keyof ServerEnv>(key: K): NonNullable
 /* ---- Integration readiness (server-only; never expose to the client) ---- */
 export const isAnthropicConfigured = (): boolean => !!getServerEnv().ANTHROPIC_API_KEY;
 export const isStripeConfigured = (): boolean => !!getServerEnv().STRIPE_SECRET_KEY;
+export const isPayPalConfigured = (): boolean => {
+  const e = getServerEnv();
+  return !!e.PAYPAL_CLIENT_ID && !!e.PAYPAL_CLIENT_SECRET;
+};
 export const isResendConfigured = (): boolean => !!getServerEnv().RESEND_API_KEY;
 export const isS3Configured = (): boolean => {
   const e = getServerEnv();

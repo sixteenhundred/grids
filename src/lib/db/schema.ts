@@ -614,6 +614,104 @@ export const domainEvent = pgTable("domain_event", {
     .notNull(),
 }, (t) => [index("event_unprocessed_idx").on(t.processedAt)]);
 
+/* -------------------------------------------------------------------------- */
+/*  Payments (Phase 3) — provider-agnostic, item-agnostic.                      */
+/*                                                                              */
+/*  GRID stores ONLY GRID transaction activity — never a creator's real Stripe/ */
+/*  PayPal balance. Amounts are in MINOR units (cents). The platform fee is     */
+/*  ON TOP of the item price (client pays price+fee; creator gets the price).   */
+/*  Escrow model: funds are captured to GRID, held, then transferred to the     */
+/*  creator on client approval (`released`). Webhook + checkout idempotency is   */
+/*  enforced by the unique indexes below. No card/bank/login data is ever stored.*/
+/* -------------------------------------------------------------------------- */
+
+/** A creator's connected payout account (Stripe Connect / PayPal). Safe metadata only. */
+export const paymentAccount = pgTable("payment_account", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  // 'stripe' | 'paypal'
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id"), // Connect acct id / PayPal merchant id
+  // 'not_connected' | 'pending' | 'connected' | 'action_required' | 'disabled'
+  status: text("status").notNull().default("not_connected"),
+  chargesEnabled: boolean("charges_enabled").notNull().default(false),
+  payoutsEnabled: boolean("payouts_enabled").notNull().default(false),
+  onboardingComplete: boolean("onboarding_complete").notNull().default(false),
+  metadataSafe: jsonb("metadata_safe").notNull().default({}),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  uniqueIndex("payacct_user_provider_uq").on(t.userId, t.provider),
+  index("payacct_user_idx").on(t.userId),
+]);
+
+/** A GRID payment for any payable item. amount_total = price + platform_fee (minor units). */
+export const payment = pgTable("payment", {
+  id: text("id").primaryKey(),
+  // Generic payable: 'product' | 'academy' | 'contract' | 'booking' | … + its id.
+  itemType: text("item_type").notNull(),
+  itemId: text("item_id"),
+  clientId: text("client_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  creatorId: text("creator_id").references(() => user.id, { onDelete: "set null" }),
+  // 'stripe' | 'paypal'
+  provider: text("provider").notNull(),
+  providerPaymentId: text("provider_payment_id"), // PaymentIntent id / PayPal capture id
+  providerCheckoutId: text("provider_checkout_id"), // Checkout Session id / PayPal order id
+  amountTotal: bigint("amount_total", { mode: "number" }).notNull().default(0),
+  platformFee: bigint("platform_fee", { mode: "number" }).notNull().default(0),
+  creatorAmount: bigint("creator_amount", { mode: "number" }).notNull().default(0),
+  currency: text("currency").notNull().default("eur"),
+  // created | pending | paid(held) | released | failed | canceled | expired | refunded | disputed
+  status: text("status").notNull().default("created"),
+  paidAt: timestamp("paid_at"),
+  releasedAt: timestamp("released_at"),
+  refundedAt: timestamp("refunded_at"),
+  disputedAt: timestamp("disputed_at"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  index("payment_client_idx").on(t.clientId),
+  index("payment_creator_idx").on(t.creatorId),
+  index("payment_item_idx").on(t.itemType, t.itemId),
+  uniqueIndex("payment_checkout_uq").on(t.providerCheckoutId), // idempotency
+]);
+
+/** A creator payout for a released payment (Stripe transfer / future PayPal payout). */
+export const payout = pgTable("payout", {
+  id: text("id").primaryKey(),
+  paymentId: text("payment_id").references(() => payment.id, { onDelete: "set null" }),
+  creatorId: text("creator_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  providerPayoutId: text("provider_payout_id"),
+  amount: bigint("amount", { mode: "number" }).notNull().default(0),
+  currency: text("currency").notNull().default("eur"),
+  // 'scheduled' | 'paid' | 'failed'
+  status: text("status").notNull().default("scheduled"),
+  scheduledFor: timestamp("scheduled_for"),
+  paidAt: timestamp("paid_at"),
+  failedAt: timestamp("failed_at"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  index("payout_creator_idx").on(t.creatorId),
+  index("payout_payment_idx").on(t.paymentId),
+]);
+
+/** Append-only provider webhook log — the dedupe surface (idempotency). */
+export const paymentEvent = pgTable("payment_event", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  eventType: text("event_type").notNull(),
+  providerEventId: text("provider_event_id"),
+  relatedPaymentId: text("related_payment_id"),
+  rawPayloadSafe: jsonb("raw_payload_safe"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  uniqueIndex("payevent_provider_event_uq").on(t.provider, t.providerEventId),
+  index("payevent_payment_idx").on(t.relatedPaymentId),
+]);
+
 export const schema = {
   user,
   auditEvent,
@@ -643,4 +741,8 @@ export const schema = {
   vaultPermission,
   vaultInvite,
   domainEvent,
+  paymentAccount,
+  payment,
+  payout,
+  paymentEvent,
 };
