@@ -32,6 +32,7 @@ function navFor(role: Role): NavGroup[] {
     { label: "My Projects", href: "/dashboard/projects", icon: "kanban" },
     { label: "Contracts", href: "/dashboard/contracts", icon: "file" },
     { label: "Finance", href: "/dashboard/finance", icon: "wallet" },
+    { label: "Payments", href: "/dashboard/payments", icon: "escrow" },
   ];
   // Creators get their operational HQ right under Home.
   if (role !== "client") main.splice(1, 0, { label: "My Operation", href: "/dashboard/operation", icon: "command" });

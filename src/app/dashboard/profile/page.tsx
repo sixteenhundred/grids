@@ -20,6 +20,7 @@ import {
 } from "@/components/dashboard/ui";
 import { PackageRow, ReviewCard } from "@/components/dashboard/cards";
 import { MyPlan } from "@/components/dashboard/my-plan";
+import { PaymentConnections } from "@/components/dashboard/payment-connections";
 import { MY_COMPANY, METRICS, money } from "@/lib/grid-data";
 import {
   loadClientProfile,
@@ -417,6 +418,11 @@ export default function ProfilePage() {
       )}
 
       <MyPlan delay={240} />
+
+      <div className="rise" style={{ animationDelay: "270ms" }}>
+        <SectionHeader title="Payments" />
+        <PaymentConnections />
+      </div>
 
       <div className="rise flex flex-wrap items-center gap-3" style={{ animationDelay: "300ms" }}>
         <Button variant="ghost" onClick={() => open(<EditCreatorSheet initial={editInitial} onSave={saveCreator} />)}>Edit profile</Button>

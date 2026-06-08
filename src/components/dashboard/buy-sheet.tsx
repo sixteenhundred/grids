@@ -115,10 +115,17 @@ export function BuyProductSheet({
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-2.5">
         <Button full tone="green" arrow disabled={step === "paying"} onClick={buy}>
           {step === "paying" ? "Securing payment…" : `Buy · ${money(total)}`}
         </Button>
+        <Link
+          href={`/dashboard/payments/checkout?itemType=product&itemId=${product.id}`}
+          onClick={close}
+          className="text-center text-xs font-medium text-white/45 transition-colors hover:text-white"
+        >
+          Pay with card or PayPal →
+        </Link>
       </div>
     </div>
   );
