@@ -46,7 +46,7 @@ export function HowItWorks() {
   const steps = STEPS[audience];
 
   return (
-    <section id="how" className="relative px-4 py-24 sm:px-6 md:py-36">
+    <section id="how" className="relative px-4 py-12 sm:px-6 md:py-16">
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-14 max-w-2xl">
           <h2 className="text-balance text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">

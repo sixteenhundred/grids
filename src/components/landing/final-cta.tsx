@@ -33,7 +33,7 @@ const hrefFor = (label: string) => LINK_MAP[label] ?? "/signup";
  *  rain behind the headline. Stands on its own so it can sit mid-page. */
 export function CtaPanel() {
   return (
-    <section className="relative px-4 py-16 sm:px-6 md:py-24">
+    <section className="relative px-4 py-10 sm:px-6 md:py-14">
       <div className="mx-auto max-w-7xl">
         <Reveal>
           <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.025] p-1.5">

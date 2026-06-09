@@ -34,7 +34,7 @@ const GUARANTEES = [
 
 export function Escrow() {
   return (
-    <section id="escrow" className="relative px-4 py-24 sm:px-6 md:py-36">
+    <section id="escrow" className="relative px-4 py-12 sm:px-6 md:py-16">
       {/* protected-green ambient */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-aerial-cyan/[0.07] blur-[140px]" />

@@ -26,10 +26,10 @@ export function Landing() {
           <Nav />
           <main>
             <Hero />
+            <Talent />
             <HowItWorks />
             <Pricing />
             <CtaPanel />
-            <Talent />
             <Escrow />
             <Jobs />
             <Trust />

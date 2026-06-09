@@ -10,6 +10,7 @@ import {
 import { useAudience, AudienceToggle } from "./audience";
 import { ImagePlaceholder } from "./image-placeholder";
 import { Cta, Eyebrow } from "./ui";
+import { ContestBox } from "./contest-cta";
 import { EASE_GRID, staggerContainer, staggerItem } from "./motion";
 
 const COPY = {
@@ -49,7 +50,7 @@ export function Hero() {
     <section
       ref={sectionRef}
       id="top"
-      className="relative min-h-[100dvh] overflow-hidden px-4 pt-32 pb-20 sm:px-6 md:pt-40"
+      className="relative overflow-hidden px-4 pt-28 pb-10 sm:px-6 md:pt-32"
     >
       {/* radial mesh glows — slow living drift + scroll counter-parallax */}
       <motion.div style={{ y: orbY }} className="pointer-events-none absolute inset-0">
@@ -70,7 +71,7 @@ export function Hero() {
         />
       </motion.div>
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
         {/* Left — copy */}
         <motion.div
           style={{ y: copyY }}
@@ -137,32 +138,18 @@ export function Hero() {
 
         </motion.div>
 
-        {/* Right — bento collage with scroll parallax + float + live card */}
-        <motion.div style={{ y: bentoY }} className="relative">
-          <motion.div
-            className="grid grid-cols-2 grid-rows-[1.2fr_0.8fr] gap-3 sm:gap-4"
-            variants={staggerContainer(0.12, 0.3)}
-            initial="hidden"
-            animate="show"
-          >
-            <FloatTile
-              span
-              float={{ y: [0, -10, 0], duration: 7 }}
-              src="/gallery/top.jpg"
-              h="h-56 sm:h-72"
-              priority
-            />
-            <FloatTile
-              float={{ y: [0, 8, 0], duration: 8.5 }}
-              src="/gallery/left.jpg"
-              h="h-40 sm:h-48"
-            />
-            <FloatTile
-              float={{ y: [0, -7, 0], duration: 9.5 }}
-              src="/gallery/right.jpg"
-              h="h-40 sm:h-48"
-            />
+        {/* Right — contest box stacked over a single live tile (tetris) */}
+        <motion.div
+          style={{ y: bentoY }}
+          className="grid gap-3 sm:gap-4"
+          variants={staggerContainer(0.12, 0.3)}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={staggerItem}>
+            <ContestBox />
           </motion.div>
+          <FloatTile float={{ y: [0, -8, 0], duration: 8 }} src="/gallery/top.jpg" h="h-44 sm:h-52" priority />
         </motion.div>
       </div>
 

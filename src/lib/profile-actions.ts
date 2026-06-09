@@ -37,6 +37,7 @@ import { safeInt, safeCategory, sanitizeEnumArray } from "./validation";
 import type { Creative, Review, Tile, Category } from "./grid-data";
 
 const CREATORS_CACHE_KEY = "creators:list";
+const PUBLIC_CREATORS_CACHE_KEY = "creators:public";
 
 // Input size caps (defence against oversized/abusive payloads).
 const CAP = { name: 80, specialty: 80, city: 80, bio: 4000, pkgName: 80, pkgDetail: 300, review: 4000, fileName: 300 } as const;
@@ -435,6 +436,30 @@ export async function listCreators(): Promise<Creative[]> {
     for (const { p, name } of rows) {
       const [{ urls }, agg] = await Promise.all([signedPortfolio(p.userId), reviewAgg(p.userId)]);
       out.push(toCreative(p, p.displayName ?? name, urls, [], agg));
+    }
+    return out;
+  });
+}
+
+/**
+ * PUBLIC creator list for the marketing landing's Browse Talent search — no auth
+ * (anonymous visitors), rate-limited, capped, and cached. Portfolio images are
+ * not signed here (the landing cards don't need them) to keep it cheap.
+ */
+export async function listPublicCreators(limit = 60): Promise<Creative[]> {
+  await enforceRateLimit("read");
+  return cached(PUBLIC_CREATORS_CACHE_KEY, 60, async () => {
+    const rows = await db
+      .select({ p: profile, name: user.name })
+      .from(profile)
+      .innerJoin(user, eq(profile.userId, user.id))
+      .where(eq(profile.published, true))
+      .orderBy(desc(profile.updatedAt))
+      .limit(limit);
+    const out: Creative[] = [];
+    for (const { p, name } of rows) {
+      const agg = await reviewAgg(p.userId);
+      out.push(toCreative(p, p.displayName ?? name, [], [], agg));
     }
     return out;
   });
