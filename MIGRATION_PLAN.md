@@ -1,6 +1,19 @@
 # GRID — STAGED MIGRATION PLAN
 
-Follows `RECON_REPORT.md`. **Nothing has moved yet.** This plan is the second approval gate — review it, then I execute one stage at a time, verifying + checkpoint-committing after each.
+Follows `RECON_REPORT.md`. Executed one stage at a time, verifying + checkpoint-committing after each.
+
+---
+
+## Update — refreshed after the contest + landing + security work
+
+Since this plan was first written, substantial feature work shipped **into the existing repo** (committed on `feat/payments`): the contest system, the landing bento redesign, the dashboard glass nav, and a security-hardening pass. The migration folds these NEW modules in:
+
+- **`features/contests`** ← `contest.ts`, `contest-actions.ts`, `contest-submit-actions.ts`, `pin-actions.ts`, `components/dashboard/{contest-admin,contest-submit-sheet,home-pins-admin,pinned-slot}.tsx`, `app/dashboard/contests/**`, and the `contest*/home_pin/notification` tables in `db/schema.ts`.
+- **`features/notifications`** ← `notifications.ts`, `notification-actions.ts` (+ the `NotificationsSheet` wiring).
+- **`lib` utils** ← `geo.ts`, `google-places.ts` (location/radius).
+- **`server/` (security)** ← the hardened `admin.ts`, `payments/records.ts` (CAS), webhook reconciliation, enforced CSP in `next.config.ts`.
+
+Stage-5's feature-module list gains **contests** + **notifications**; everything else below is unchanged.
 
 ---
 
