@@ -51,6 +51,10 @@ export const profile = pgTable("profile", {
   role: text("role").notNull().default("creative"),
   bio: text("bio"),
   location: text("location"),
+  // Country + profile picture (data URL). Required to enter a contest (1d);
+  // a generated initials avatar is shown when `avatar` is null.
+  country: text("country"),
+  avatar: text("avatar"),
   // Marketplace display fields (creator profile). `displayName` overrides the
   // auth name for the public card; `published` gates appearance in /browse.
   displayName: text("display_name"),
@@ -674,6 +678,7 @@ export const payment = pgTable("payment", {
   index("payment_creator_idx").on(t.creatorId),
   index("payment_item_idx").on(t.itemType, t.itemId),
   uniqueIndex("payment_checkout_uq").on(t.providerCheckoutId), // idempotency
+  uniqueIndex("payment_provider_pi_uq").on(t.provider, t.providerPaymentId), // one payment per provider charge
 ]);
 
 /** A creator payout for a released payment (Stripe transfer / future PayPal payout). */
@@ -694,7 +699,7 @@ export const payout = pgTable("payout", {
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
 }, (t) => [
   index("payout_creator_idx").on(t.creatorId),
-  index("payout_payment_idx").on(t.paymentId),
+  uniqueIndex("payout_payment_uq").on(t.paymentId), // at most ONE payout per payment (double-payout guard)
 ]);
 
 /** Append-only provider webhook log — the dedupe surface (idempotency). */
@@ -710,6 +715,110 @@ export const paymentEvent = pgTable("payment_event", {
 }, (t) => [
   uniqueIndex("payevent_provider_event_uq").on(t.provider, t.providerEventId),
   index("payevent_payment_idx").on(t.relatedPaymentId),
+]);
+
+/* -------------------------------------------------------------------------- */
+/*  Contests — brand- or GRID-funded creative contests with token-based prizes. */
+/*                                                                              */
+/*  Funding: brand-funded contests HOLD the prize (+platform fee) via a         */
+/*  `payment` row before going live; GRID-funded are platform-seeded (fee 0).   */
+/*  A contest goes `live`/accepts submissions ONLY when funded. Each prize       */
+/*  TOKEN carries a portion of the prize; redeeming a token on a winning         */
+/*  submission pays that creator (Stripe transfer) and transfers rights for      */
+/*  that single piece. Amounts are MINOR units (cents). Submissions are private  */
+/*  previews until a token is redeemed on them.                                  */
+/* -------------------------------------------------------------------------- */
+
+export const contest = pgTable("contest", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  // 'video' | 'image' — determines submission upload rules (4K/2min vs 5GB images)
+  type: text("type").notNull().default("video"),
+  // draft | pending_funding | live | closed | finalized | canceled
+  status: text("status").notNull().default("draft"),
+  // 'grid' (platform-seeded) | 'brand' (client-funded, prize held before live)
+  fundingSource: text("funding_source").notNull().default("grid"),
+  hostId: text("host_id").references(() => user.id, { onDelete: "set null" }), // brand host; null = GRID/platform
+  prizeAmount: bigint("prize_amount", { mode: "number" }).notNull().default(0), // total prize, minor units
+  platformFee: bigint("platform_fee", { mode: "number" }).notNull().default(0), // on top; brand-funded only
+  currency: text("currency").notNull().default("eur"),
+  submitCutoffAt: timestamp("submit_cutoff_at"),
+  winnerPickAt: timestamp("winner_pick_at"),
+  terms: text("terms").notNull().default(""), // fixed admission block, stored per contest
+  fundingPaymentId: text("funding_payment_id").references(() => payment.id, { onDelete: "set null" }),
+  createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  index("contest_status_idx").on(t.status),
+  index("contest_host_idx").on(t.hostId),
+]);
+
+/** One prize token = a set portion of the prize, redeemable once on a winning submission. */
+export const contestToken = pgTable("contest_token", {
+  id: text("id").primaryKey(),
+  contestId: text("contest_id").notNull().references(() => contest.id, { onDelete: "cascade" }),
+  idx: integer("idx").notNull().default(0), // 0-based rank (0 = 1st)
+  label: text("label").notNull().default(""), // e.g. "1st place"
+  amount: bigint("amount", { mode: "number" }).notNull().default(0), // portion of prize, minor units
+  // 'available' | 'redeemed'
+  status: text("status").notNull().default("available"),
+  redeemedSubmissionId: text("redeemed_submission_id"),
+  redeemedPaymentId: text("redeemed_payment_id"),
+  redeemedAt: timestamp("redeemed_at"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [index("ctoken_contest_idx").on(t.contestId)]);
+
+/** A creator's contest entry. Private preview until a token is redeemed on it. */
+export const contestSubmission = pgTable("contest_submission", {
+  id: text("id").primaryKey(),
+  contestId: text("contest_id").notNull().references(() => contest.id, { onDelete: "cascade" }),
+  creatorId: text("creator_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull().default(""),
+  description: text("description").notNull().default(""),
+  filePath: text("file_path"), // private storage key — never exposed publicly
+  fileType: text("file_type"),
+  fileSize: bigint("file_size", { mode: "number" }),
+  durationSec: integer("duration_sec"), // recorded for video-limit enforcement
+  // 'submitted' | 'winner' | 'purchased'
+  status: text("status").notNull().default("submitted"),
+  addToPortfolio: boolean("add_to_portfolio").notNull().default(false),
+  rightsTransferred: boolean("rights_transferred").notNull().default(false),
+  termsAccepted: boolean("terms_accepted").notNull().default(false),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  index("csub_contest_idx").on(t.contestId),
+  index("csub_creator_idx").on(t.creatorId),
+]);
+
+/** In-app notifications. `user_id` NULL = broadcast to ALL users (e.g. contest promo). */
+export const notification = pgTable("notification", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }), // NULL = broadcast
+  type: text("type").notNull().default("system"), // 'system' | 'contest' | …
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  icon: text("icon"),
+  link: text("link"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  index("notif_user_idx").on(t.userId),
+  index("notif_created_idx").on(t.createdAt),
+]);
+
+/** Admin-curated items pinned to the top of the home feed (a contest or a post). */
+export const homePin = pgTable("home_pin", {
+  id: text("id").primaryKey(),
+  itemType: text("item_type").notNull(), // 'contest' | 'post'
+  itemId: text("item_id").notNull(),
+  position: integer("position").notNull().default(0), // ascending = top-first
+  createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()).notNull(),
+}, (t) => [
+  uniqueIndex("homepin_item_uq").on(t.itemType, t.itemId),
+  index("homepin_pos_idx").on(t.position),
 ]);
 
 export const schema = {
@@ -745,4 +854,9 @@ export const schema = {
   payment,
   payout,
   paymentEvent,
+  contest,
+  contestToken,
+  contestSubmission,
+  notification,
+  homePin,
 };

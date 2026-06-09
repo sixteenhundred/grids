@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSheet, SheetHeader, SheetRow } from "./sheet";
 import { Button, StatusPill, ACCENT, Avatar, Stars, Verified, TrustBadge } from "./ui";
 import { Icon, type IconName } from "./icons";
 import { useRole } from "./role-context";
+import { listMyNotifications } from "@/lib/notification-actions";
 import {
   money,
   INVITE_LINK,
@@ -252,7 +253,24 @@ export function NotificationsSheet({ role }: { role: Role }) {
             detail: `${d.client} accepted ${d.projectTitle}. ${money(d.value)} released to you.`,
             when: relativeTime(d.acceptedAt ?? d.createdAt),
           }));
-  const list = [...deliveryNotifs, ...NOTIFS[role]];
+  // Real broadcast/personal notifications (e.g. a promoted contest) sit on top.
+  const [live, setLive] = useState<Notif[]>([]);
+  useEffect(() => {
+    listMyNotifications()
+      .then((rows) =>
+        setLive(
+          rows.map((r): Notif => ({
+            icon: r.icon || "bell",
+            accent: r.type === "contest" ? "gold" : "blue",
+            title: r.title,
+            detail: r.body,
+            when: relativeTime(r.createdAt),
+          })),
+        ),
+      )
+      .catch(() => {});
+  }, []);
+  const list = [...live, ...deliveryNotifs, ...NOTIFS[role]];
   return (
     <div>
       <SheetHeader title="Notifications" subtitle="Bookings, requests and updates." />

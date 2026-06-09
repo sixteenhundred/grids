@@ -258,3 +258,47 @@ create policy payout_own on public.payout for select to authenticated
   using (creator_id = (auth.uid())::text);
 
 -- payment_event: server-only (RLS on, no grants, no policy → denied on the API).
+
+-- ============================================================================
+--  CONTESTS — public-readable when visible; submissions are private previews.
+--  All writes happen via server actions (postgres role bypasses RLS); the
+--  browser surface gets READ-only, scoped policies. No write grants below.
+-- ============================================================================
+alter table public.contest            enable row level security;
+alter table public.contest_token      enable row level security;
+alter table public.contest_submission enable row level security;
+alter table public.notification       enable row level security;
+
+-- contest: anyone signed in sees contests that are live/closed/finalized
+-- (drafts + unfunded contests stay hidden from the API surface).
+grant select on public.contest to authenticated;
+drop policy if exists contest_public_read on public.contest;
+create policy contest_public_read on public.contest for select to authenticated
+  using (status in ('live', 'closed', 'finalized'));
+
+-- contest_token: readable only alongside a visible contest.
+grant select on public.contest_token to authenticated;
+drop policy if exists ctoken_visible_read on public.contest_token;
+create policy ctoken_visible_read on public.contest_token for select to authenticated
+  using (exists (select 1 from public.contest c
+                 where c.id = contest_id and c.status in ('live', 'closed', 'finalized')));
+
+-- contest_submission: PRIVATE preview — a creator reads only their OWN entries
+-- (the host/admin view goes through server actions, not the API surface).
+grant select on public.contest_submission to authenticated;
+drop policy if exists csub_own_read on public.contest_submission;
+create policy csub_own_read on public.contest_submission for select to authenticated
+  using (creator_id = (auth.uid())::text);
+
+-- notification: a user reads their own rows + broadcasts (user_id is null).
+grant select on public.notification to authenticated;
+drop policy if exists notif_own_or_broadcast on public.notification;
+create policy notif_own_or_broadcast on public.notification for select to authenticated
+  using (user_id = (auth.uid())::text or user_id is null);
+
+-- home_pin: admin-curated, shown to everyone → public read; writes server-only.
+alter table public.home_pin enable row level security;
+grant select on public.home_pin to authenticated;
+drop policy if exists homepin_public_read on public.home_pin;
+create policy homepin_public_read on public.home_pin for select to authenticated
+  using (true);

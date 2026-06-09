@@ -19,6 +19,8 @@ import {
 import type { AuditReport, FlagMap, ServerActionResult } from "@/lib/admin-types";
 import { Card, PageHeader, StatusPill, Toggle } from "./ui";
 import { Icon, type IconName } from "./icons";
+import { ContestAdmin } from "./contest-admin";
+import { HomePinsManager } from "./home-pins-admin";
 
 function fmtUptime(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -206,6 +208,12 @@ export function AdminPanel({
           )}
         </Card>
       </section>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Contests                                                          */}
+      {/* ---------------------------------------------------------------- */}
+      <ContestAdmin />
+      <HomePinsManager />
 
       {/* ---------------------------------------------------------------- */}
       {/* Live server status                                                */}

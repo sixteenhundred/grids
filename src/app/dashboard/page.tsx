@@ -10,6 +10,7 @@ import { MetricCard, SectionHeader, Button, IconTile, Surface, Icon } from "@/co
 import { FeaturedCreativeCard, JobRow, PostCard, ProjectCard } from "@/components/dashboard/cards";
 import { JOBS, POSTS, PROJECTS, METRICS, money, type Creative } from "@/lib/grid-data";
 import { listCreators } from "@/lib/profile-actions";
+import { PinnedSlot } from "@/components/dashboard/pinned-slot";
 
 export default function DashboardHome() {
   const { role } = useRole();
@@ -55,6 +56,9 @@ export default function DashboardHome() {
           </div>
         </div>
       </section>
+
+      {/* Pinned (admin-curated) — sits at the very top of the feed */}
+      <PinnedSlot />
 
       {/* Metrics */}
       <section className="rise grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" style={{ animationDelay: "60ms" }}>
