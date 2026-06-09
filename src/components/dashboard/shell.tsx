@@ -33,6 +33,7 @@ function navFor(role: Role): NavGroup[] {
     { label: "Contracts", href: "/dashboard/contracts", icon: "file" },
     { label: "Finance", href: "/dashboard/finance", icon: "wallet" },
     { label: "Payments", href: "/dashboard/payments", icon: "escrow" },
+    { label: "Contests", href: "/dashboard/contests", icon: "gift" },
   ];
   // Creators get their operational HQ right under Home.
   if (role !== "client") main.splice(1, 0, { label: "My Operation", href: "/dashboard/operation", icon: "command" });
@@ -143,7 +144,8 @@ export function DashboardShell({
     groups.push({ heading: "Admin", items: [{ label: "Control Panel", href: "/dashboard/admin", icon: "shield" }] });
   }
   // Full literal class strings so Tailwind's JIT can see them.
-  const accentText = role === "client" ? "text-client-green" : "text-grid-blue";
+  // Active nav item: plain white (a super-slight highlight comes from the bg), no colored accent.
+  const accentText = "text-white";
   // Clients get the full "GRID for Clients" subscription + workspace ecosystem;
   // creators keep their own plans page.
   const planHref = role === "client" ? "/client/subscriptions" : "/dashboard/subscription";
@@ -190,6 +192,15 @@ export function DashboardShell({
 
   return (
     <div className="relative min-h-dvh lg:flex">
+      {/* Liquid-glass displacement map — same refraction as the landing nav */}
+      <svg aria-hidden className="pointer-events-none absolute h-0 w-0">
+        <filter id="liquid-glass" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.013 0.013" numOctaves={2} seed={11} result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="1.4" result="soft" />
+          <feDisplacementMap in="SourceGraphic" in2="soft" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+
       {/* ambient background */}
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className={`absolute -top-40 left-1/4 h-[36rem] w-[36rem] rounded-full ${role === "client" ? "bg-client-green/8" : "bg-grid-blue/8"} blur-[140px]`} />
@@ -199,7 +210,7 @@ export function DashboardShell({
       {/* ---------------------------------------------------------------- */}
       {/* Desktop sidebar                                                   */}
       {/* ---------------------------------------------------------------- */}
-      <aside className={`sticky top-0 z-30 hidden h-dvh shrink-0 flex-col border-r border-white/8 bg-grid-black/60 py-6 backdrop-blur-xl transition-[width,padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:flex ${collapsed ? "w-[4.75rem] px-2.5" : "w-64 px-4"}`}>
+      <aside className={`sticky top-0 z-30 hidden h-dvh shrink-0 flex-col glass-nav border-r border-white/8 py-6 transition-[width,padding] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:flex ${collapsed ? "w-[4.75rem] px-2.5" : "w-64 px-4"}`}>
         <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between px-1"}`}>
           {!collapsed && (
             <Link href="/dashboard" className="text-xl font-semibold tracking-tight text-white">
@@ -291,7 +302,7 @@ export function DashboardShell({
       {/* ---------------------------------------------------------------- */}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 bg-grid-black/70 px-4 py-3 backdrop-blur-xl sm:px-6">
+        <header className="glass-nav sticky top-0 z-30 flex items-center gap-3 border-b border-white/8 px-4 py-3 sm:px-6">
           {/* universal back — appears on nested pages */}
           {canGoBack && (
             <button
@@ -322,7 +333,7 @@ export function DashboardShell({
             <button
               onClick={primaryAction}
               aria-label={role === "client" ? "Post a job" : "Add to portfolio"}
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-on-accent transition-transform hover:scale-105 ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
+              className="flex h-9 w-9 items-center justify-center text-white transition-transform hover:scale-110"
             >
               <Icon name="plus" size={20} />
             </button>
@@ -348,13 +359,13 @@ export function DashboardShell({
       {/* Mobile bottom nav                                                 */}
       {/* ---------------------------------------------------------------- */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-5 lg:hidden">
-        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-soft-black/90 px-2 py-2 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        <div className="glass-nav flex items-center gap-1 rounded-full border border-white/10 px-2 py-2">
           <BottomBtn href="/dashboard" icon="home" pathname={pathname} accent={accentText} />
           <BottomBtn href="/dashboard/browse" icon="compass" pathname={pathname} accent={accentText} />
           <button
             onClick={primaryAction}
             aria-label={role === "client" ? "Post a job" : "Add to portfolio"}
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-on-accent ${role === "client" ? "bg-client-green" : "bg-grid-blue"}`}
+            className="flex h-12 w-12 items-center justify-center text-white"
           >
             <Icon name="plus" size={24} />
           </button>
