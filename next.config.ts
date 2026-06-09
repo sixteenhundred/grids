@@ -37,10 +37,15 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-  // REPORT-ONLY first (Rule 2: must not break the locked UI). Flip the key to
-  // "Content-Security-Policy" once verified to enforce.
-  { key: "Content-Security-Policy-Report-Only", value: csp },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), browsing-topics=()" },
+  // ENFORCED. Self-contained app surface (Supabase in connect/img, Stripe & PayPal
+  // are redirect-based so no third-party JS). If Google Maps JS is re-enabled,
+  // add https://maps.googleapis.com to script-src + https://*.googleapis.com to
+  // img-src/connect-src before it will load. script-src still allows 'unsafe-inline'
+  // for Next's hydration bootstrap — tighten to per-request nonces as a follow-up.
+  { key: "Content-Security-Policy", value: csp },
+  // Isolate our browsing context (XS-Leaks / popup tampering defense).
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {

@@ -1,19 +1,22 @@
 /**
  * Admin identity — pure helper, safe to import anywhere (no "use server").
  *
- * The built-in demo account is always an admin so the control panel works on a
- * fresh deploy. Add more admins via the ADMIN_EMAILS env var (comma-separated).
+ * Admins are configured ONLY via env and FAIL CLOSED (no env → no admins).
+ * There is deliberately NO hardcoded admin email: a self-registerable address
+ * must never grant admin (that was an account-takeover hole). Put a real,
+ * already-registered address you control in ADMIN_EMAILS (prod) / DEMO_EMAIL
+ * (local). Synthetic anonymous emails (`*@grid.local`) are always rejected, so a
+ * guest/anonymous session can never be admin.
  */
 
-const DEMO_EMAIL = (process.env.DEMO_EMAIL ?? "joingrid@demo.com").toLowerCase();
+function adminSet(): Set<string> {
+  const raw = `${process.env.ADMIN_EMAILS ?? ""},${process.env.DEMO_EMAIL ?? ""}`;
+  return new Set(raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
+}
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   const e = email.trim().toLowerCase();
-  if (e === DEMO_EMAIL) return true;
-  const list = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return list.includes(e);
+  if (!e || e.endsWith("@grid.local")) return false; // never anonymous/synthetic identities
+  return adminSet().has(e);
 }

@@ -30,6 +30,7 @@ import {
   setPaymentStatus,
   getPayment,
   createPayoutRecord,
+  claimPaymentTransition,
 } from "./payments/records";
 import {
   stripeReady,
@@ -163,24 +164,34 @@ export async function releasePayment(paymentId: string): Promise<void> {
     throw new Error("The creator hasn't finished setting up payouts yet.");
   }
 
-  const source = pay.providerPaymentId ? await getChargeIdForIntent(pay.providerPaymentId) : null;
-  const { transferId } = await transferToCreator({
-    amount: pay.creatorAmount,
-    currency: pay.currency,
-    destinationAccountId: acct.providerAccountId,
-    transferGroup: pay.id,
-    sourceTransaction: source,
-  });
-  await setPaymentStatus(pay.id, "released", { releasedAt: new Date() });
-  await createPayoutRecord({
-    paymentId: pay.id,
-    creatorId: pay.creatorId,
-    provider: "stripe",
-    providerPayoutId: transferId,
-    amount: pay.creatorAmount,
-    currency: pay.currency,
-    status: "paid",
-  });
+  // Atomically claim the release (paid → released) BEFORE moving any money, so two
+  // concurrent calls can't double-transfer and a release can't race a refund.
+  const claimed = await claimPaymentTransition(pay.id, ["paid"], "released", { releasedAt: new Date() });
+  if (!claimed) throw new Error("This payment is already being released or is no longer held.");
+
+  try {
+    const source = pay.providerPaymentId ? await getChargeIdForIntent(pay.providerPaymentId) : null;
+    const { transferId } = await transferToCreator({
+      amount: pay.creatorAmount,
+      currency: pay.currency,
+      destinationAccountId: acct.providerAccountId,
+      transferGroup: pay.id,
+      sourceTransaction: source,
+    });
+    await createPayoutRecord({
+      paymentId: pay.id,
+      creatorId: pay.creatorId,
+      provider: "stripe",
+      providerPayoutId: transferId,
+      amount: pay.creatorAmount,
+      currency: pay.currency,
+      status: "paid",
+    });
+  } catch (e) {
+    // Transfer failed → no money moved; roll the hold back so it can be retried.
+    await setPaymentStatus(pay.id, "paid");
+    throw e;
+  }
 }
 
 /** Refund a held (or disputed) payment. Allowed for the paying client or an admin. */
@@ -192,12 +203,20 @@ export async function refundPayment(paymentId: string): Promise<void> {
   if (!["paid", "disputed"].includes(pay.status)) throw new Error("This payment can't be refunded.");
   if (!pay.providerPaymentId) throw new Error("Missing provider payment reference.");
 
-  if (pay.provider === "stripe") {
-    await refundPaymentIntent({ paymentIntentId: pay.providerPaymentId });
-  } else {
-    await refundCapture({ captureId: pay.providerPaymentId, amount: pay.amountTotal, currency: pay.currency });
+  // Claim the refund atomically so it can't race a release (or a second refund).
+  const prev = pay.status as "paid" | "disputed";
+  const claimed = await claimPaymentTransition(pay.id, ["paid", "disputed"], "refunded", { refundedAt: new Date() });
+  if (!claimed) throw new Error("This payment can no longer be refunded.");
+  try {
+    if (pay.provider === "stripe") {
+      await refundPaymentIntent({ paymentIntentId: pay.providerPaymentId });
+    } else {
+      await refundCapture({ captureId: pay.providerPaymentId, amount: pay.amountTotal, currency: pay.currency });
+    }
+  } catch (e) {
+    await setPaymentStatus(pay.id, prev); // refund call failed → restore prior state
+    throw e;
   }
-  await setPaymentStatus(pay.id, "refunded", { refundedAt: new Date() });
 }
 
 export type ClientPaymentView = {

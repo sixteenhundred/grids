@@ -33,6 +33,16 @@ function asString(v: unknown): string | null {
   return null;
 }
 
+/** Reconcile what Stripe actually charged against our stored record before crediting. */
+function amountsMatch(amount: unknown, currency: unknown, expectedMinor: number, expectedCurrency: string): boolean {
+  return (
+    typeof amount === "number" &&
+    amount === expectedMinor &&
+    typeof currency === "string" &&
+    currency.toLowerCase() === expectedCurrency.toLowerCase()
+  );
+}
+
 export async function POST(req: Request) {
   const secret = getServerEnv().STRIPE_WEBHOOK_SECRET;
   const raw = await req.text();
@@ -68,6 +78,10 @@ export async function POST(req: Request) {
         if (paymentId) {
           const pay = await getPayment(paymentId);
           if (pay && pay.status !== "paid" && pay.status !== "released") {
+            if (!amountsMatch(obj.amount_total, obj.currency, pay.amountTotal, pay.currency)) {
+              console.error("[stripe-webhook] amount/currency mismatch on", paymentId, "— not crediting");
+              break;
+            }
             await setPaymentStatus(paymentId, "paid", {
               paidAt: new Date(),
               ...(intentId ? { providerPaymentId: intentId } : {}),
@@ -84,6 +98,11 @@ export async function POST(req: Request) {
         if (paymentId) {
           const pay = await getPayment(paymentId);
           if (pay && pay.status !== "paid" && pay.status !== "released") {
+            const received = (obj.amount_received ?? obj.amount) as unknown;
+            if (!amountsMatch(received, obj.currency, pay.amountTotal, pay.currency)) {
+              console.error("[stripe-webhook] PI amount/currency mismatch on", paymentId, "— not crediting");
+              break;
+            }
             await setPaymentStatus(paymentId, "paid", {
               paidAt: new Date(),
               ...(intentId ? { providerPaymentId: intentId } : {}),
@@ -124,6 +143,7 @@ export async function POST(req: Request) {
 
       case "account.updated": {
         const accountId = asString(obj.id);
+        const gridUserId = (obj.metadata as Record<string, string> | undefined)?.gridUserId;
         if (accountId) {
           const chargesEnabled = !!obj.charges_enabled;
           const payoutsEnabled = !!obj.payouts_enabled;
@@ -146,7 +166,15 @@ export async function POST(req: Request) {
               metadataSafe: { currentlyDue: requirements.currently_due ?? [], disabledReason: requirements.disabled_reason ?? null },
               updatedAt: new Date(),
             })
-            .where(and(eq(paymentAccount.provider, "stripe"), eq(paymentAccount.providerAccountId, accountId)));
+            .where(
+              and(
+                eq(paymentAccount.provider, "stripe"),
+                eq(paymentAccount.providerAccountId, accountId),
+                // Bind the payouts-enabled flip to the owner Stripe stamped on the
+                // account at creation — never enable payouts on a mismatched row.
+                ...(gridUserId ? [eq(paymentAccount.userId, gridUserId)] : []),
+              ),
+            );
         }
         break;
       }

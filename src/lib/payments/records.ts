@@ -6,7 +6,7 @@ import "server-only";
  * (unique), and webhook events dedupe via (provider, provider_event_id). Never
  * stores card/bank/login data — only GRID transaction activity.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { payment, payout, paymentEvent } from "../db/schema";
 
@@ -44,6 +44,26 @@ export async function setPaymentStatus(
   patch: Partial<{ providerPaymentId: string; providerCheckoutId: string; paidAt: Date; releasedAt: Date; refundedAt: Date; disputedAt: Date }> = {},
 ): Promise<void> {
   await db.update(payment).set({ status, updatedAt: new Date(), ...patch }).where(eq(payment.id, id));
+}
+
+/**
+ * Atomic compare-and-swap on payment status: flip `from → to` only if the row is
+ * STILL in a `from` state, in a single UPDATE. Returns true only for the caller
+ * that won the transition. This is what makes release/refund concurrency-safe —
+ * two clicks (or release racing refund) can't both move the money.
+ */
+export async function claimPaymentTransition(
+  id: string,
+  from: PaymentStatus[],
+  to: PaymentStatus,
+  patch: Partial<{ providerPaymentId: string; paidAt: Date; releasedAt: Date; refundedAt: Date; disputedAt: Date }> = {},
+): Promise<boolean> {
+  const rows = await db
+    .update(payment)
+    .set({ status: to, updatedAt: new Date(), ...patch })
+    .where(and(eq(payment.id, id), inArray(payment.status, from)))
+    .returning({ id: payment.id });
+  return rows.length > 0;
 }
 
 export const getPayment = (id: string) =>
